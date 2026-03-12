@@ -127,7 +127,7 @@ repomind-ai/
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/your-username/repomind-ai.git
+git clone https://github.com/k-satyam215/repomind-ai.git
 cd repomind-ai
 pip install -r requirements.txt
 ```
