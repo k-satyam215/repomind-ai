@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+streamlit
+gitpython
+python-dotenv
+langchain
+langchain-core
+langchain-groq
+pytest
+PyGithub
