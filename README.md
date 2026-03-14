@@ -2,37 +2,37 @@
 
 ![RepoMind Demo](assets/demo.png)
 
-RepoMind AI is an autonomous software engineering agent designed to analyze real-world GitHub repositories, detect runtime issues, generate minimal fixes, apply patches, and validate solutions through iterative reasoning.
+RepoMind AI is an experimental autonomous software engineering agent designed to understand unfamiliar codebases, detect realistic runtime issues, generate minimal corrective patches, and validate fixes through iterative reasoning workflows.
 
-This system simulates real debugging workflows followed by software engineers and demonstrates applied **Agentic AI system design** using structured reasoning, tool execution, and reflection loops.
+The system demonstrates applied **Agentic AI architecture** by combining structured reasoning, tool-driven execution, reflection loops, and automated validation pipelines inspired by real software engineering debugging practices.
 
 ---
 
 ## 🚀 Key Capabilities
 
-* 🔍 Automated repository architecture understanding
-* 🐞 AI-driven runtime bug detection
-* 🛠 Minimal and targeted fix generation
-* 📊 Unified diff preview for transparency
-* 🔁 Reflection-based retry loop (agentic behavior)
-* 🧠 Lightweight memory for past successful fixes
-* 🧪 Automated test execution for fix validation
-* ⚡ FastAPI backend for orchestration
-* 🎯 Streamlit UI for interactive debugging
-* 🐳 Fully Dockerized deployment
+* 🔍 Automated repository architecture interpretation
+* 🐞 Heuristic + LLM-assisted runtime issue detection
+* 🛠 Minimal, targeted fix generation
+* 📊 Unified diff-level patch transparency
+* 🔁 Reflection-based retry loops (agent convergence behavior)
+* 🧠 Lightweight short-term fix memory
+* 🧪 Automated test execution for validation
+* ⚡ FastAPI orchestration layer
+* 🎯 Streamlit interactive debugging interface
+* 🐳 Fully containerized deployment
 
 ---
 
-## 🧠 Problem Statement
+## 🧠 Motivation
 
-Understanding unfamiliar codebases and debugging runtime failures is time-consuming and cognitively demanding.
+Understanding unfamiliar repositories and diagnosing runtime failures introduces significant cognitive overhead for developers.
 
-RepoMind AI assists developers by:
+RepoMind AI explores how autonomous reasoning systems can assist engineers by:
 
-1. Interpreting repository architecture
-2. Identifying realistic runtime issues
-3. Generating actionable minimal fixes
-4. Iteratively improving solutions using reflection
+* Structurally interpreting unknown codebases
+* Hypothesizing realistic runtime failures
+* Generating minimal actionable patches
+* Iteratively improving solutions through feedback loops
 
 ---
 
@@ -41,22 +41,21 @@ RepoMind AI assists developers by:
 ```
 User
   ↓
-Streamlit UI (Interaction Layer)
+Streamlit Interface (Interaction Layer)
   ↓
-FastAPI Backend (Orchestration Layer)
+FastAPI Backend (Execution Orchestrator)
   ↓
 LangGraph Agent Controller
   ↓
 LLM Reasoning Engine
 
 Execution Pipeline:
-  → Repository Analysis
-  → Runtime Issue Detection
-  → Fix Generation
+  → Repository Structure Analysis
+  → Runtime Issue Hypothesis
+  → Fix Patch Generation
   → Patch Application
   → Test Execution
-  → Reflection Loop
-  → Retry / Convergence
+  → Reflection & Retry
 ```
 
 ---
@@ -64,58 +63,58 @@ Execution Pipeline:
 ## 🤖 Agent Workflow
 
 1. Clone target repository
-2. Parse project structure and dependencies
-3. Analyze architecture using LLM reasoning
-4. Detect realistic runtime issues
-5. Generate minimal fix patches
-6. Apply fixes to codebase
-7. Execute test suite for validation
-8. Reflect on failure/success
+2. Parse file structure and dependencies
+3. Perform architecture reasoning using LLM
+4. Detect potential runtime issues
+5. Generate minimal corrective patch
+6. Apply patch to repository
+7. Execute automated tests
+8. Reflect on results
 9. Retry until convergence
-10. Store successful fixes in memory
+10. Store successful fix context in memory
 
 ---
 
-## 📊 Evaluation (Prototype Stage)
+## 📊 Prototype Evaluation
 
-Tested on:
+RepoMind AI has been qualitatively evaluated on small-to-medium Python repositories, including:
 
-* Sample Flask applications
-* FastAPI template repositories
-* Small open-source Python utilities
+* Flask sample applications
+* FastAPI template projects
+* Lightweight open-source Python utilities
 
-Observed behavior:
+Observed experimental behavior:
 
-* Bug detection success: ~70%
-* Fix validation success: ~60%
-* Retry convergence: ~2 iterations average
+* Successful issue hypothesis in multiple scenarios
+* Partial automated fix validation through test execution
+* Typical convergence within a few retry iterations
 
-⚠️ These metrics are early experimental observations.
+⚠️ These observations represent early prototype experimentation rather than controlled benchmark results.
 
 ---
 
 ## ⚠️ Current Limitations
 
-* Limited support for large monolithic repositories
-* Context window constraints for deep dependency graphs
-* Heuristic bug hypothesis generation
-* No long-term persistent memory yet
-* Python-focused (multi-language support planned)
+* Limited scalability for large monolithic codebases
+* Context window constraints in deeply nested dependency graphs
+* Heuristic bug hypothesis formulation
+* No persistent long-term memory across sessions
+* Currently optimized for Python repositories
 
 ---
 
-## 🔮 Future Work
+## 🔮 Future Directions
 
-* Hierarchical planning agents
-* Multi-repository reasoning
-* Static + dynamic hybrid analysis
-* Vector database based long-term memory
-* Autonomous pull-request generation
-* Distributed agent orchestration
+* Hierarchical planning-based agent orchestration
+* Multi-repository reasoning capabilities
+* Hybrid static + dynamic analysis integration
+* Vector database-backed long-term memory
+* Autonomous pull-request generation pipelines
+* Distributed agent execution architecture
 
 ---
 
-## 🛠 Tech Stack
+## 🛠 Technology Stack
 
 * Python
 * FastAPI
@@ -189,7 +188,7 @@ cd repomind-ai
 pip install -r requirements.txt
 ```
 
-Create a `.env` file:
+Create `.env` file:
 
 ```bash
 GROQ_API_KEY=your_api_key_here
@@ -213,7 +212,7 @@ streamlit run frontend/app.py
 
 ---
 
-## 🐳 Run with Docker
+## 🐳 Docker Deployment
 
 ```bash
 docker build -t repomind-ai .
@@ -224,10 +223,10 @@ docker run -p 8000:8000 -p 8501:8501 --env-file .env repomind-ai
 
 ## ⭐ Contribution
 
-Contributions, ideas, and research discussions are welcome.
+Research discussions, feedback, and experimental improvements are welcome.
 
 ---
 
 ## 📜 License
 
-This project is open-source and intended for research and educational purposes.
+Open-source research prototype intended for educational and experimental use.
