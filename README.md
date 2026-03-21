@@ -15,7 +15,7 @@ It simulates the reasoning workflow of a junior software engineer using an agent
 * 🧠 Dependency-aware fix generation
 * 🔒 AST-based syntax validation
 * 🧪 Sandboxed patch execution
-* ⚡ Async test execution (CI-style)
+* ⚡ Async test execution (CI-style validation)
 * 🔁 Reflection-driven retry loop
 * 🧠 Persistent vector memory (learning agent)
 * 🤖 Automated GitHub Pull Request creation
@@ -40,7 +40,7 @@ RepoMind assists developers by:
 
 ## 🧩 System Architecture
 
-RepoMind follows an agent-oriented pipeline integrating UI, backend orchestration, autonomous reasoning, sandboxed execution, and DevOps automation.
+The following diagram illustrates RepoMind’s autonomous software engineering pipeline.
 
 ![RepoMind Architecture](assets/architecture.png)
 
@@ -81,6 +81,18 @@ User → Streamlit UI → FastAPI → Agent Graph → Sandbox → Test Runner �
 
 ---
 
+## 📊 Benchmark
+
+| Repository Size    | Issues Detected | Fix Success Rate |
+| ------------------ | --------------- | ---------------- |
+| Small (~10 files)  | 3               | 100%             |
+| Medium (~40 files) | 7               | 71%              |
+| Large (~100 files) | 12              | 58%              |
+
+Benchmarks performed on real-world open-source Python repositories.
+
+---
+
 ## 📂 Project Structure
 
 ```
@@ -105,33 +117,19 @@ repomind-ai/
 │   ├── demo.png
 │   └── architecture.png
 │
-├── logs/
-│
 ├── Dockerfile
 ├── requirements.txt
 ├── pyproject.toml
-├── .env.example
-└── README.md
+├── README.md
+└── .env.example
 ```
-
----
-
-## 📊 Benchmark
-
-| Repository Size    | Issues Detected | Fix Success Rate |
-| ------------------ | --------------- | ---------------- |
-| Small (~10 files)  | 3               | 100%             |
-| Medium (~40 files) | 7               | 71%              |
-| Large (~100 files) | 12              | 58%              |
-
-Benchmarks performed on real-world open-source Python repositories.
 
 ---
 
 ## 🚀 Installation
 
 ```bash
-git clone https://github.com/your-username/repomind-ai.git
+git clone https://github.com/k-satyam215/repomind-ai.git
 cd repomind-ai
 pip install -r requirements.txt
 ```
@@ -145,21 +143,21 @@ cp .env.example .env
 Add:
 
 ```
-GROQ_API_KEY=your_key
-GITHUB_TOKEN=your_token
+GROQ_API_KEY=your_key  
+GITHUB_TOKEN=your_token  
 ```
 
 ---
 
 ## ▶️ Run Locally
 
-### Backend
+Backend:
 
 ```bash
 uvicorn backend.main:app --reload
 ```
 
-### Frontend
+Frontend:
 
 ```bash
 streamlit run frontend/app.py
@@ -180,7 +178,7 @@ docker run -p 8000:8000 -p 8501:8501 --env-file .env repomind-ai
 
 Unlike simple AI coding assistants, RepoMind:
 
-* Understands repository structure
+* Understands full repository architecture
 * Validates fixes before applying
 * Learns from debugging history
 * Uses autonomous reasoning loop
