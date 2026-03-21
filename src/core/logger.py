@@ -4,24 +4,32 @@ import os
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 
-def get_logger(name):
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+
+
+def get_logger(name: str):
 
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
 
-    if not logger.handlers:
+    if logger.handlers:
+        return logger
 
-        file_handler = logging.FileHandler(f"{LOG_DIR}/app.log")
-        console_handler = logging.StreamHandler()
+    level = getattr(logging, LOG_LEVEL, logging.INFO)
+    logger.setLevel(level)
 
-        formatter = logging.Formatter(
-            "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-        )
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
 
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
+    file_handler = logging.FileHandler(
+        os.path.join(LOG_DIR, "repomind.log")
+    )
+    console_handler = logging.StreamHandler()
 
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 
     return logger

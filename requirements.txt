@@ -8,3 +8,4 @@ langchain-core
 langchain-groq
 pytest
 PyGithub
+chromadb
