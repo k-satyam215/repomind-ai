@@ -161,8 +161,8 @@ if data:
                 report = issue["report"]
 
                 st.markdown(f"""
-                🔴 **Bug:** {report.get("bug")}  
-                🟡 **Impact:** {report.get("impact")}  
+                🔴 **Bug:** {report.get("bug")}
+                🟡 **Impact:** {report.get("impact")}
                 🟢 **Fix:** {report.get("fix_hint")}
                 """)
 
