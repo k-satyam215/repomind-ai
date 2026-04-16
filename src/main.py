@@ -1,18 +1,18 @@
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
 
 import git
 
-from src.utils.repo_parser import get_repo_structure
-from src.utils.repo_filter import filter_repo_files
-from src.agents.repo_analyzer import analyze_repo_structure
 from src.agents.bug_detector import detect_bugs
-from src.tools.file_tools import read_file
-from src.tools.dependency_graph import build_dependency_map
-from src.tools.file_prioritizer import prioritize_files
+from src.agents.repo_analyzer import analyze_repo_structure
 from src.core.config import MAX_ANALYSIS_FILES
 from src.core.logger import get_logger
+from src.tools.dependency_graph import build_dependency_map
+from src.tools.file_prioritizer import prioritize_files
+from src.tools.file_tools import read_file
+from src.utils.repo_filter import filter_repo_files
+from src.utils.repo_parser import get_repo_structure
 
 logger = get_logger("RepoMind.Main")
 

@@ -1,12 +1,10 @@
 """
 Tests for src/agents — LLM calls are mocked so no API key needed.
 """
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.agents.patch_apply_agent import apply_patch
 from src.agents.test_runner_agent import run_tests
-
 
 # ─── patch_apply_agent ────────────────────────────────────────────────────────
 

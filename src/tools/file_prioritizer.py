@@ -1,6 +1,7 @@
-import os
 import ast
-from typing import List, Callable
+import os
+from typing import Callable, List
+
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.FilePrioritizer")

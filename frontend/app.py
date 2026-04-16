@@ -1,7 +1,8 @@
-import streamlit as st
-import requests
 import os
 import time
+
+import requests
+import streamlit as st
 
 BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
 

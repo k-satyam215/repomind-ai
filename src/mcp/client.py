@@ -1,5 +1,6 @@
 import requests
-from src.core.config import MCP_URL, MCP_TIMEOUT
+
+from src.core.config import MCP_TIMEOUT, MCP_URL
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.MCPClient")

@@ -1,6 +1,7 @@
-import subprocess
 import os
+import subprocess
 import sys
+
 from src.core.config import TEST_TIMEOUT
 from src.core.logger import get_logger
 

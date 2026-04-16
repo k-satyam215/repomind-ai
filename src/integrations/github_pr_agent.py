@@ -1,6 +1,6 @@
-import os
 import git
 from github import Github
+
 from src.core.config import GITHUB_TOKEN
 from src.core.logger import get_logger
 
