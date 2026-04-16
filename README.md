@@ -6,6 +6,7 @@
 **Clone a repo. Detect bugs. Generate fixes. Validate. Open PR. Automatically.**
 
 [![CI](https://github.com/k-satyam215/repomind-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/k-satyam215/repomind-ai/actions/workflows/ci.yml)
+[![CD](https://github.com/k-satyam215/repomind-ai/actions/workflows/cd.yml/badge.svg)](https://github.com/k-satyam215/repomind-ai/actions/workflows/cd.yml)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![LangGraph](https://img.shields.io/badge/LangGraph-Agent-FF6B35)](https://langchain-ai.github.io/langgraph)
@@ -19,7 +20,7 @@
 
 ## 🎥 Demo
 
-▶️ [Watch Demo Video](assets/demo.mp4)
+▶️ [Watch Full Demo](assets/demo.mp4)
 
 💡 *Best viewed in full screen for complete workflow*
 
@@ -27,9 +28,9 @@
 
 <br/>
 
-> RepoMind AI is a **semi-autonomous software engineering agent** built with LangGraph, Groq, and FastAPI.  
-> Give it any GitHub repository URL — it analyzes the codebase, detects runtime bugs, generates fixes,  
-> validates them in an isolated sandbox, and opens a GitHub Pull Request automatically.
+> RepoMind AI is a **semi-autonomous software engineering agent** built with LangGraph, Groq, and FastAPI.
+> Give it any GitHub repository URL — it analyzes the codebase, detects runtime bugs, generates fixes,
+> validates them in an isolated sandbox, and opens a GitHub Pull Request **only after tests pass**.
 
 </div>
 
@@ -45,6 +46,15 @@ RepoMind AI is an AI system that:
 - 🧪 Validates every fix via `pytest`
 - 🔁 Retries intelligently using a reflection loop
 - 🤖 Creates a GitHub Pull Request **only after tests pass**
+
+---
+
+## 💥 Why RepoMind AI?
+
+- Reduces manual debugging effort significantly by automating the detect → fix → validate cycle
+- Demonstrates autonomous agent workflows combining LLM reasoning, tool execution, and persistent memory
+- Combines AI + DevOps + Software Engineering in one production-grade system
+- Uses MCP (Model Context Protocol) for safe, modular, sandboxed tool execution
 
 ---
 
@@ -68,18 +78,18 @@ RepoMind AI is an AI system that:
 
 ## ⚙️ MCP (Model Context Protocol)
 
-RepoMind uses **MCP as a dedicated tool execution layer** — keeping tool operations isolated from the agent reasoning layer.
+RepoMind uses **MCP as a dedicated tool execution layer** — keeping tool operations completely isolated from agent reasoning.
 
 | MCP Tool | What it does |
 |---|---|
 | `read_file` | Safely reads source files from the repo |
-| `apply_patch` | Applies fix atomically with `.bak` backup and rollback |
+| `apply_patch` | Applies fix atomically with `.bak` backup and rollback on failure |
 | `run_tests` | Runs `pytest` on the sandboxed repo via subprocess |
 
 This gives RepoMind:
 - ✅ **Modular** — tools are swappable without touching agent logic
-- ✅ **Safe** — all tool calls run on an isolated sandbox copy
-- ✅ **Scalable** — MCP server runs as a separate service
+- ✅ **Safe** — all tool calls run on an isolated sandbox copy, original repo untouched
+- ✅ **Scalable** — MCP server runs as a fully independent service
 
 ---
 
@@ -93,11 +103,11 @@ This gives RepoMind:
 | 📄 Full-File Fix Generation | Returns complete fixed file — never partial snippets |
 | ✅ AST Syntax Validation | Every fix validated before it touches the repo |
 | 🏖️ Sandboxed Execution | Original repo untouched until all tests pass |
-| 🔁 Reflection-Driven Retry | Agent reflects on failures and retries with better strategy |
+| 🔁 Reflection-Driven Retry | Agent reflects on failures and retries with better strategy (max 3) |
 | 🧠 Persistent Vector Memory | Learns from past fixes via ChromaDB |
 | 🤖 GitHub PR (after validation) | PR created only when fix is validated by tests |
 | ⚙️ MCP Tool Architecture | File I/O, patching, testing via dedicated tool server |
-| 📊 Smart File Prioritization | Scores files by importance, focuses on what matters |
+| 📊 Smart File Prioritization | Scores files by importance, focuses on what matters most |
 | 🔒 Atomic Patch Apply | `.bak` backup + rollback on any write failure |
 
 ---
@@ -259,15 +269,14 @@ repomind-ai/
 git clone https://github.com/k-satyam215/repomind-ai.git
 cd repomind-ai
 
-# 2. One-command setup
-#    Creates venv, installs deps, copies .env, runs all tests
+# 2. One-command setup (creates venv, installs deps, copies .env, runs tests)
 bash setup.sh
 ```
 
 ```env
 # 3. Edit .env
 GROQ_API_KEY=your_groq_api_key_here
-GITHUB_TOKEN=your_github_token_here    # optional — only for PR creation.
+GITHUB_TOKEN=your_github_token_here    # optional — only for PR creation
 ```
 
 ```bash
@@ -302,6 +311,14 @@ docker-compose up --build
 | ⚡ FastAPI Backend | http://localhost:8000 |
 | 🔧 MCP Tool Server | http://localhost:9000 |
 | 📖 API Docs (Swagger) | http://localhost:8000/docs |
+
+---
+
+## 🐳 Docker Image
+
+```bash
+docker pull satyam215/repomind-ai:latest
+```
 
 ---
 
@@ -380,7 +397,7 @@ MIT — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Built by [Satyam Kumar](https://github.com/k-satyam215)**  
+**Built by [Satyam Kumar](https://github.com/k-satyam215)**
 AI Systems Engineer · Autonomous Agent Builder
 
 [![GitHub](https://img.shields.io/badge/GitHub-k--satyam215-181717?logo=github)](https://github.com/k-satyam215)
