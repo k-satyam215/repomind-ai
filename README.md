@@ -15,7 +15,15 @@
 
 <br/>
 
-![Demo](assets/demo.gif)
+<div align="center">
+
+## 🎥 Demo
+
+▶️ [Watch Demo Video](assets/demo.mp4)
+
+💡 *Best viewed in full screen for complete workflow*
+
+</div>
 
 <br/>
 
@@ -226,7 +234,7 @@ repomind-ai/
 │
 ├── 📁 assets/
 │   ├── architecture.png          # System architecture diagram
-│   └── demo.gif                  # Demo walkthrough
+│   └── demo.mp4                  # Demo walkthrough
 │
 ├── 📁 .github/workflows/
 │   ├── ci.yml                    # Lint + Test + Docker build on every push
