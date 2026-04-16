@@ -1,6 +1,5 @@
-from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
-
+from langchain_core.messages import HumanMessage, SystemMessage
 from src.core.config import GROQ_API_KEY, MAX_FIX_LINES
 from src.core.logger import get_logger
 
@@ -72,9 +71,7 @@ def generate_fix(file: str, code: str, bug: dict) -> str:
         # Safety: if fix is absurdly large, reject it
         if len(fix.splitlines()) > MAX_FIX_LINES:
             logger.warning(
-                f"Fix for '{file}' too large "
-                f"({len(fix.splitlines())} lines > {MAX_FIX_LINES}) "
-                "— rejected"
+                f"Fix for '{file}' too large ({len(fix.splitlines())} lines > {MAX_FIX_LINES}) — rejected"
             )
             return code
 
