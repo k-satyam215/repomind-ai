@@ -21,8 +21,6 @@ from src.tools.sandbox_patch import commit_sandbox_changes, create_sandbox_copy
 logger = get_logger("RepoMind.Graph")
 
 
-# ─── State ────────────────────────────────────────────────────────────────────
-
 class AgentState(TypedDict, total=False):
     repo_url: str
     repo_data: Dict[str, Any]
@@ -37,16 +35,12 @@ class AgentState(TypedDict, total=False):
     patch_status: Dict[str, Any]
 
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-
 def _cleanup_sandbox(state: AgentState) -> None:
     sandbox = state.get("sandbox_repo")
     if sandbox and os.path.exists(sandbox):
         shutil.rmtree(sandbox, ignore_errors=True)
         logger.debug(f"Sandbox cleaned up: {sandbox}")
 
-
-# ─── Nodes ────────────────────────────────────────────────────────────────────
 
 def analysis_node(state: AgentState) -> dict:
     logger.info(f"Analyzing repo: {state['repo_url']}")
@@ -76,7 +70,6 @@ def fix_node(state: AgentState) -> dict:
     main_file: str = issue["file"]
     related_files: List[str] = get_related_files(main_file, dep_map)
 
-    # Build full context: main file + up to 3 related files
     context = ""
 
     main_res = mcp_call("read_file", {"path": os.path.join(repo_path, main_file)})
@@ -94,20 +87,17 @@ def fix_node(state: AgentState) -> dict:
         if rf_code:
             context += f"\n### FILE: {rf}\n{rf_code}\n"
 
-    # Augment with similar past fix from vector memory
     similar = search_similar_bug(issue["report"])
     if similar:
         context += f"\n### SIMILAR PAST FIX (for reference)\n{similar}\n"
         logger.debug("Similar bug found in vector memory — context augmented")
 
-    # Append reflection hint from previous failed attempt
     reflection = state.get("reflection", "")
     if reflection:
         context += f"\n### PREVIOUS ATTEMPT FAILED — REASON\n{reflection}\n"
 
     fix = generate_fix(main_file, context, issue["report"])
 
-    # Validate the fix is valid Python BEFORE applying it
     validation = validate_python_syntax(fix)
     if not validation["valid"]:
         logger.warning(f"Fix failed syntax validation: {validation['error']}")
@@ -129,7 +119,6 @@ def fix_node(state: AgentState) -> dict:
 def apply_patch_node(state: AgentState) -> dict:
     original_repo: str = state["repo_data"]["repo_path"]
 
-    # Always work in a sandbox — never touch original repo until tests pass
     sandbox_repo = create_sandbox_copy(original_repo)
 
     result = mcp_call("apply_patch", {
@@ -161,12 +150,6 @@ def test_node(state: AgentState) -> dict:
 
 
 def reflection_node(state: AgentState) -> dict:
-    """
-    Evaluate test results.
-    On success: commit changes, save memory, create PR, clean up sandbox.
-    On failure: reflect, plan, clean up sandbox, increment retry.
-    Sandbox cleanup is ALWAYS done here — no leaks.
-    """
     patch_ok = state.get("patch_status", {}).get("success", False)
     test_ok = state.get("test_result", {}).get("success", False)
 
@@ -174,20 +157,21 @@ def reflection_node(state: AgentState) -> dict:
         if not patch_ok:
             return {
                 "retry_count": state.get("retry_count", 0) + 1,
-                "reflection": f"Patch application failed: {state['patch_status'].get('error', 'unknown')}",
+                "reflection": (
+                    f"Patch application failed: "
+                    f"{state['patch_status'].get('error', 'unknown')}"
+                ),
                 "action": "retry"
             }
 
         if test_ok:
             logger.info("Fix validated — committing to original repo")
 
-            # Commit sandbox → original
             commit_sandbox_changes(
                 state["sandbox_repo"],
                 state["repo_data"]["repo_path"]
             )
 
-            # Persist memory
             save_vector_memory(state["repo_data"]["issues"][0], state["fix"])
             save_memory({
                 "bug": state["repo_data"]["issues"][0],
@@ -195,7 +179,6 @@ def reflection_node(state: AgentState) -> dict:
                 "result": "success"
             })
 
-            # Create PR — non-blocking failure
             try:
                 create_fix_pr(
                     state["repo_data"]["repo_url"],
@@ -207,7 +190,6 @@ def reflection_node(state: AgentState) -> dict:
 
             return {"action": "done"}
 
-        # Tests failed — reflect and plan retry
         reflection = reflect_on_failure(
             state["repo_data"]["issues"][0],
             state["fix"],
@@ -222,11 +204,8 @@ def reflection_node(state: AgentState) -> dict:
         }
 
     finally:
-        # ALWAYS clean up sandbox — even if an exception occurs above
         _cleanup_sandbox(state)
 
-
-# ─── Graph ────────────────────────────────────────────────────────────────────
 
 def build_graph():
     graph = StateGraph(AgentState)

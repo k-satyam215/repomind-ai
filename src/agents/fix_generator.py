@@ -72,7 +72,9 @@ def generate_fix(file: str, code: str, bug: dict) -> str:
         # Safety: if fix is absurdly large, reject it
         if len(fix.splitlines()) > MAX_FIX_LINES:
             logger.warning(
-                f"Fix for '{file}' too large ({len(fix.splitlines())} lines > {MAX_FIX_LINES}) — rejected"
+                f"Fix for '{file}' too large "
+                f"({len(fix.splitlines())} lines > {MAX_FIX_LINES}) "
+                "— rejected"
             )
             return code
 
