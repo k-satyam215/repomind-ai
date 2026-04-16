@@ -267,7 +267,7 @@ bash setup.sh
 ```env
 # 3. Edit .env
 GROQ_API_KEY=your_groq_api_key_here
-GITHUB_TOKEN=your_github_token_here    # optional — only for PR creation
+GITHUB_TOKEN=your_github_token_here    # optional — only for PR creation.
 ```
 
 ```bash
