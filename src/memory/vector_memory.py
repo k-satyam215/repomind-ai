@@ -1,7 +1,6 @@
 import hashlib
 import os
 from typing import Optional
-
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.VectorMemory")

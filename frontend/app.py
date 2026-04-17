@@ -161,10 +161,25 @@ if data:
                 report = issue["report"]
 
                 st.markdown(f"""
-                🔴 **Bug:** {report.get("bug")}
-                🟡 **Impact:** {report.get("impact")}
-                🟢 **Fix:** {report.get("fix_hint")}
-                """)
+<div style="padding: 14px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155;">
+
+<p style="color:#ff4b4b; margin-bottom:10px;">
+<b>🔴 Bug:</b><br>
+{report.get("bug")}
+</p>
+
+<p style="color:#facc15; margin-bottom:10px;">
+<b>🟡 Impact:</b><br>
+{report.get("impact")}
+</p>
+
+<p style="color:#4ade80;">
+<b>🟢 Fix:</b><br>
+{report.get("fix_hint")}
+</p>
+
+</div>
+""", unsafe_allow_html=True)
 
                 # FIX BUTTON
                 if st.button("⚡ Generate Fix", key=f"fix_{idx}"):
