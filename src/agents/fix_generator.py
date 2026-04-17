@@ -1,5 +1,6 @@
-from langchain_groq import ChatGroq
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_groq import ChatGroq
+
 from src.core.config import GROQ_API_KEY, MAX_FIX_LINES
 from src.core.logger import get_logger
 

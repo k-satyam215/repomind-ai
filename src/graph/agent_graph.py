@@ -1,25 +1,22 @@
 import os
 import shutil
-from typing import Dict, Any, List, TypedDict, Optional
+from typing import Any, Dict, List, TypedDict
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from src.main import analyze_repository
 from src.agents.fix_generator import generate_fix
-from src.agents.reflection_agent import reflect_on_failure
 from src.agents.planner_agent import plan_next_step
-
-from src.memory.simple_memory import save_memory
-from src.memory.vector_memory import search_similar_bug, save_vector_memory
-
-from src.tools.sandbox_patch import create_sandbox_copy, commit_sandbox_changes
-from src.tools.dependency_graph import get_related_files
-from src.tools.ast_validator import validate_python_syntax
-
-from src.integrations.github_pr_agent import create_fix_pr
-from src.mcp.client import mcp_call
+from src.agents.reflection_agent import reflect_on_failure
 from src.core.config import MAX_RETRIES
 from src.core.logger import get_logger
+from src.integrations.github_pr_agent import create_fix_pr
+from src.main import analyze_repository
+from src.mcp.client import mcp_call
+from src.memory.simple_memory import save_memory
+from src.memory.vector_memory import save_vector_memory, search_similar_bug
+from src.tools.ast_validator import validate_python_syntax
+from src.tools.dependency_graph import get_related_files
+from src.tools.sandbox_patch import commit_sandbox_changes, create_sandbox_copy
 
 logger = get_logger("RepoMind.Graph")
 
