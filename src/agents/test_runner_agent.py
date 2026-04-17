@@ -10,9 +10,9 @@ logger = get_logger("RepoMind.TestRunner")
 
 def run_tests(repo_path: str) -> dict:
     """
-    Run pytest in the given repo path using subprocess.    
+    Run pytest in the given repo path using subprocess.
     Uses subprocess.run instead of asyncio to avoid event loop conflicts
-    when called from within FastAPI / LangGraph (which already run an event loop).    
+    when called from within FastAPI / LangGraph (which already run an event loop).
     Returns {"success": bool, "output": str}
     """
     logger.info(f"Running tests in: {repo_path}")
