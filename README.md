@@ -28,7 +28,7 @@
 
 <br/>
 
-> RepoMind AI is a **semi-autonomous software engineering agent** built with LangGraph, Groq, and FastAPI.
+> RepoMind AI is a **autonomous software engineering agent** built with LangGraph, Groq, and FastAPI.
 > Give it any GitHub repository URL — it analyzes the codebase, detects runtime bugs, generates fixes,
 > validates them in an isolated sandbox, and opens a GitHub Pull Request **only after tests pass**.
 
