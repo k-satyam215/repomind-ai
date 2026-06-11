@@ -3,8 +3,8 @@ name: Deploy to HuggingFace Spaces
 on:
   push:
     tags:
-      - "v*.*.*"          # deploy on version tags: v1.2.0, v1.3.0, etc.
-  workflow_dispatch:      # allow manual trigger from GitHub Actions UI
+      - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
   deploy-hf:
@@ -16,15 +16,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Configure Git for HF push
+      - name: Configure Git
         run: |
           git config --global user.email "ci@repomind.ai"
           git config --global user.name "RepoMind CI"
 
+      - name: Remove large files before push
+        run: |
+          git filter-branch --force --index-filter \
+            'git rm --cached --ignore-unmatch assets/demo.mp4 assets/demo.gif' \
+            --prune-empty --tag-name-filter cat -- --all 2>/dev/null || true
+
       - name: Push to HuggingFace Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE: ${{ secrets.HF_SPACE }}   # e.g. satyam215/repomind-ai
+          HF_SPACE: ${{ secrets.HF_SPACE }}
         run: |
-          git remote add hf https://satyam215:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}
+          git remote add hf https://Satyam970:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}
           git push hf HEAD:main --force

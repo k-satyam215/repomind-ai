@@ -3,13 +3,14 @@ name: CD — Publish to Docker Hub
 on:
   push:
     tags:
-      - "v*.*.*"   # triggers on v1.0.0, v1.2.0, etc.
+      - "v*.*.*"
 
 jobs:
 
   docker-publish:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
+    if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +31,8 @@ jobs:
           context: .
           push: true
           tags: |
-            satyam215/repomind-ai:${{ steps.meta.outputs.VERSION }}
-            satyam215/repomind-ai:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/repomind-ai:${{ steps.meta.outputs.VERSION }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/repomind-ai:latest
 
       - name: Verify push
-        run: echo "✅ Pushed satyam215/repomind-ai:${{ steps.meta.outputs.VERSION }} to Docker Hub"
+        run: echo "✅ Pushed repomind-ai:${{ steps.meta.outputs.VERSION }} to Docker Hub"
