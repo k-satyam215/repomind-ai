@@ -1,3 +1,13 @@
+---
+title: RepoMind AI
+emoji: 🤖
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_file: huggingface_app.py
+pinned: false
+---
+
 <div align="center">
 
 # RepoMind AI
