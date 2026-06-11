@@ -20,31 +20,54 @@ SYSTEM_PROMPT = """You are a senior Python debugging engineer.
 Detect REALISTIC bugs that may break functionality at runtime.
 
 Report:
-- Runtime errors
-- Wrong imports
-- Deprecated APIs
-- Incorrect library usage
-- Logic mistakes
+- Runtime errors (NameError, AttributeError, TypeError, ImportError)
+- Wrong or missing imports
+- Deprecated APIs (e.g. removed in newer library versions)
+- Incorrect library usage (wrong method signatures, wrong args)
+- Logic mistakes that produce wrong results
 - Version compatibility issues
 
 DO NOT report:
-- Style issues
+- Style issues or PEP 8 violations
 - Naming conventions
 - Performance optimizations
+- Missing docstrings
 
 Respond ONLY with valid JSON. No markdown, no backticks, no explanation.
 
 If a bug is found:
-{"bug": "...", "impact": "...", "fix_hint": "..."}
+{
+  "bug": "...",
+  "impact": "...",
+  "fix_hint": "...",
+  "severity": "critical|high|medium",
+  "confidence": 0.0-1.0,
+  "bug_type": "import_error|runtime_error|logic_error|deprecated_api|type_error|other"
+}
 
 If no bug:
-{"bug": "none", "impact": "none", "fix_hint": "none"}"""
+{"bug": "none", "impact": "none", "fix_hint": "none", "severity": "none", "confidence": 1.0, "bug_type": "none"}
+
+severity guide:
+- critical: causes immediate crash or data corruption
+- high: breaks core functionality under normal use
+- medium: breaks functionality only in edge cases
+
+confidence guide:
+- 1.0: 100% certain this is a real bug
+- 0.8: very likely a bug
+- 0.6: probable bug, context-dependent
+- below 0.5: uncertain — do not report"""
 
 
 def detect_bugs(file: str, code: str) -> Optional[dict]:
     """
     Run LLM bug detection on a single file's code.
-    Returns a bug dict or None if no bug found / detection failed.
+
+    Returns a bug dict with severity + confidence fields, or None if:
+    - no bug found
+    - confidence below threshold (0.6)
+    - detection failed
     """
     if not code or not code.strip():
         return None
@@ -73,6 +96,21 @@ def detect_bugs(file: str, code: str) -> Optional[dict]:
         if data.get("bug", "none").lower() == "none":
             return None
 
+        # Filter low-confidence detections — reduce false positives
+        confidence = float(data.get("confidence", 1.0))
+        if confidence < 0.6:
+            logger.debug(f"Bug skipped — low confidence ({confidence:.2f}) in: {file}")
+            return None
+
+        # Ensure all fields present with defaults
+        data.setdefault("severity", "medium")
+        data.setdefault("confidence", confidence)
+        data.setdefault("bug_type", "other")
+
+        logger.info(
+            f"Bug detected in '{file}' | severity={data['severity']} "
+            f"confidence={confidence:.2f} type={data['bug_type']}"
+        )
         return data
 
     except json.JSONDecodeError as e:

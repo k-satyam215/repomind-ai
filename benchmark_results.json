@@ -1,0 +1,56 @@
+{
+  "summary": {
+    "repos_tested": 3,
+    "total_bugs_detected": 22,
+    "total_fixes_validated": 15,
+    "total_fixes_attempted": 22,
+    "overall_fix_success_rate_pct": 68.2,
+    "benchmark_date": "2025-01-15",
+    "model": "llama-3.3-70b-versatile",
+    "notes": "Run with MAX_ANALYSIS_FILES=30, MAX_RETRIES=3. Fix success = patches that passed pytest in isolated sandbox."
+  },
+  "results": [
+    {
+      "repo": "python-basics-exercises",
+      "repo_url": "https://github.com/realpython/python-basics-exercises",
+      "label": "small",
+      "files_analyzed": 10,
+      "bugs_detected": 3,
+      "fixes_attempted": 3,
+      "fixes_validated": 3,
+      "fix_success_rate": 1.0,
+      "avg_retries": 0.0,
+      "total_duration_s": 41.2,
+      "severity_breakdown": { "high": 2, "medium": 1 },
+      "bug_types": { "import_error": 1, "runtime_error": 1, "logic_error": 1 }
+    },
+    {
+      "repo": "click",
+      "repo_url": "https://github.com/pallets/click",
+      "label": "medium",
+      "files_analyzed": 30,
+      "bugs_detected": 7,
+      "fixes_attempted": 7,
+      "fixes_validated": 5,
+      "fix_success_rate": 0.714,
+      "avg_retries": 0.86,
+      "total_duration_s": 143.7,
+      "severity_breakdown": { "critical": 1, "high": 4, "medium": 2 },
+      "bug_types": { "deprecated_api": 2, "runtime_error": 3, "type_error": 2 }
+    },
+    {
+      "repo": "requests",
+      "repo_url": "https://github.com/psf/requests",
+      "label": "large",
+      "files_analyzed": 30,
+      "bugs_detected": 12,
+      "fixes_attempted": 12,
+      "fixes_validated": 7,
+      "fix_success_rate": 0.583,
+      "avg_retries": 1.42,
+      "total_duration_s": 287.4,
+      "severity_breakdown": { "critical": 3, "high": 6, "medium": 3 },
+      "bug_types": { "deprecated_api": 4, "runtime_error": 5, "logic_error": 2, "type_error": 1 }
+    }
+  ]
+}

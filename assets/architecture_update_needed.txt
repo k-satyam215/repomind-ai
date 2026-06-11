@@ -1,0 +1,3 @@
+Architecture diagram has been updated.
+See architecture.svg for the current version.
+This file can be safely deleted.

@@ -96,3 +96,26 @@ class TestFixRoute:
         data = res.json()
         assert data["old"] == "x = 1"
         assert data["new"] == "x = 999"
+
+
+class TestMetricsRoute:
+
+    def test_metrics_returns_200(self):
+        res = client.get("/metrics")
+        assert res.status_code == 200
+
+    def test_metrics_has_required_fields(self):
+        res = client.get("/metrics")
+        data = res.json()
+        assert "total_runs" in data
+        assert "fix_success_rate_pct" in data
+        assert "severity_distribution" in data
+        assert "retry_distribution" in data
+        assert "avg_stage_latency_ms" in data
+        assert "recent_runs" in data
+
+    def test_fix_success_rate_is_numeric(self):
+        res = client.get("/metrics")
+        rate = res.json()["fix_success_rate_pct"]
+        assert isinstance(rate, (int, float))
+        assert 0.0 <= rate <= 100.0

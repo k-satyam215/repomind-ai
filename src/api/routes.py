@@ -1,15 +1,24 @@
+import asyncio
+import json
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
 
-from src.agents.fix_generator import generate_fix
+from src.agents.fix_generator import generate_fix, generate_fix_stream, generate_multi_file_fix
+from src.agents.parallel_processor import apply_approved_fixes, process_issues_parallel
 from src.core.logger import get_logger
 from src.main import analyze_repository
+from src.observability.metrics import get_metrics
+from src.tools.dependency_graph import get_related_files
 from src.tools.diff_tools import generate_diff
 from src.tools.file_tools import read_file
 
 logger = get_logger("RepoMind.Routes")
 router = APIRouter()
 
+
+# ─── Request models ────────────────────────────────────────────────────────────
 
 class RepoRequest(BaseModel):
     repo_url: str
@@ -29,11 +38,44 @@ class FixRequest(BaseModel):
     bug: dict
 
 
+class StreamFixRequest(BaseModel):
+    repo_path: str
+    file: str
+    bug: dict
+
+
+class MultiFileFixRequest(BaseModel):
+    repo_path: str
+    file: str
+    related_files: list[str] = []
+    bug: dict
+
+
+class ApproveFixRequest(BaseModel):
+    repo_path: str
+    approved_fixes: dict[str, str]  # {filename: fixed_code}
+
+
 class DiffRequest(BaseModel):
     old: str
     new: str
     filename: str = "file"
 
+
+class ParallelAnalyzeRequest(BaseModel):
+    repo_url: str
+    max_concurrent: int = 3
+
+    @field_validator("repo_url")
+    @classmethod
+    def validate_url(cls, v: str) -> str:
+        v = v.strip()
+        if not v.startswith("https://github.com/"):
+            raise ValueError("Only GitHub HTTPS URLs are supported")
+        return v
+
+
+# ─── Standard endpoints ────────────────────────────────────────────────────────
 
 @router.post("/analyze")
 def analyze(req: RepoRequest):
@@ -56,19 +98,162 @@ def fix(req: FixRequest):
     try:
         old_code = read_file(f"{req.repo_path}/{req.file}")
         if not old_code:
-            raise HTTPException(
-                status_code=404,
-                detail=f"File not found or empty: {req.file}"
-            )
-
+            raise HTTPException(status_code=404, detail=f"File not found or empty: {req.file}")
         new_code = generate_fix(req.file, old_code, req.bug)
-
         return {"old": old_code, "new": new_code}
-
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Fix endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix/multi")
+def fix_multi(req: MultiFileFixRequest):
+    """
+    Generate fixes across multiple related files in one LLM call.
+    Returns per-file diffs for preview before any changes are applied.
+    """
+    logger.info(f"Multi-file fix request: {req.file}")
+    try:
+        # Build files context
+        files_context: dict[str, str] = {}
+        main_code = read_file(f"{req.repo_path}/{req.file}")
+        if not main_code:
+            raise HTTPException(status_code=404, detail=f"File not found: {req.file}")
+        files_context[req.file] = main_code
+
+        for rf in req.related_files[:3]:
+            rf_code = read_file(f"{req.repo_path}/{rf}")
+            if rf_code:
+                files_context[rf] = rf_code
+
+        if len(files_context) > 1:
+            fixed_files = generate_multi_file_fix(req.file, files_context, req.bug)
+        else:
+            fixed_code = generate_fix(req.file, main_code, req.bug)
+            fixed_files = {req.file: fixed_code} if fixed_code != main_code else {}
+
+        # Build diffs
+        diffs = {}
+        for fname, new_code in fixed_files.items():
+            orig = files_context.get(fname, "")
+            d = generate_diff(orig, new_code, fname)
+            if d:
+                diffs[fname] = d
+
+        return {
+            "fixed_files": fixed_files,
+            "diffs": diffs,
+            "changed_file_count": len(fixed_files)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Multi-file fix error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix/approve")
+def approve_fix(req: ApproveFixRequest):
+    """
+    Human-in-the-loop: apply user-approved fixes to the repo.
+    This endpoint is called ONLY after the user clicks 'Approve & Apply' in the UI.
+    """
+    logger.info(f"Applying {len(req.approved_fixes)} approved fix(es) to {req.repo_path}")
+    try:
+        result = apply_approved_fixes(req.repo_path, req.approved_fixes)
+        if not result.get("success"):
+            raise HTTPException(status_code=500, detail=result.get("error", "Apply failed"))
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Approve fix error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/fix/stream")
+def fix_stream(req: StreamFixRequest):
+    """
+    Stream fix generation token by token via Server-Sent Events.
+    Frontend consumes this with fetch() + ReadableStream for real-time display.
+    """
+    logger.info(f"Streaming fix request: {req.file}")
+
+    old_code = read_file(f"{req.repo_path}/{req.file}")
+    if not old_code:
+        raise HTTPException(status_code=404, detail=f"File not found: {req.file}")
+
+    def _sse_generator():
+        # Send metadata first
+        yield f"data: {json.dumps({'type': 'start', 'file': req.file})}\n\n"
+
+        full_fix = []
+        try:
+            for chunk in generate_fix_stream(req.file, old_code, req.bug):
+                full_fix.append(chunk)
+                payload = json.dumps({"type": "token", "content": chunk})
+                yield f"data: {payload}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            return
+
+        # Send final assembled fix + diff
+        assembled = "".join(full_fix)
+        # Strip markdown fences if present
+        if assembled.startswith("```"):
+            lines = assembled.splitlines()
+            assembled = "\n".join(l for l in lines if not l.startswith("```")).strip()
+
+        diff = generate_diff(old_code, assembled, req.file)
+        yield f"data: {json.dumps({'type': 'done', 'fix': assembled, 'diff': diff, 'original': old_code})}\n\n"
+
+    return StreamingResponse(
+        _sse_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
+@router.post("/analyze/parallel")
+async def analyze_parallel(req: ParallelAnalyzeRequest):
+    """
+    Analyze repo + process all issues in parallel (async).
+    Returns per-issue fix previews with diffs — no changes applied until user approves.
+    """
+    logger.info(f"Parallel analyze request: {req.repo_url}")
+    try:
+        # Step 1: clone + detect (blocking, run in executor)
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, analyze_repository, req.repo_url)
+
+        issues = result.get("issues", [])
+        repo_path = result.get("repo_path")
+        dep_map = result.get("dependency_map", {})
+
+        if not issues or not repo_path:
+            return {**result, "processed_issues": []}
+
+        # Step 2: process all issues in parallel
+        processed = await process_issues_parallel(
+            issues, repo_path, dep_map, max_concurrent=req.max_concurrent
+        )
+
+        return {
+            **result,
+            "processed_issues": processed,
+            "total_issues": len(issues),
+            "issues_with_fixes": sum(1 for p in processed if p.get("success")),
+            "total_files_to_change": sum(p.get("changed_file_count", 0) for p in processed)
+        }
+
+    except Exception as e:
+        logger.error(f"Parallel analyze error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -78,4 +263,18 @@ def diff(req: DiffRequest):
         return {"diff": generate_diff(req.old, req.new, req.filename)}
     except Exception as e:
         logger.error(f"Diff endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/metrics")
+def metrics():
+    """
+    Live observability endpoint.
+    Returns fix success rates, retry distribution, stage latencies,
+    severity breakdown, and recent run history.
+    """
+    try:
+        return get_metrics()
+    except Exception as e:
+        logger.error(f"Metrics endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
