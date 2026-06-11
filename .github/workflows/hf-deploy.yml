@@ -21,19 +21,18 @@ jobs:
           git config --global user.email "ci@repomind.ai"
           git config --global user.name "RepoMind CI"
 
-      - name: Push to HuggingFace Spaces (exclude large files)
+      - name: Push to HuggingFace Spaces (exclude binary/media files)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
         run: |
-          # Create a fresh orphan branch with only current files (no history with large files)
           git checkout --orphan hf-deploy-branch
-          
-          # Remove large media files
-          rm -f assets/demo.mp4 assets/demo.gif
-          
+
+          # Remove all binary/media files HF rejects
+          rm -rf assets/demo.mp4 assets/demo.gif assets/architecture.png uv.lock
+
           git add .
-          git commit -m "deploy: RepoMind AI v$(git describe --tags --abbrev=0 2>/dev/null || echo 'latest')"
-          
+          git commit -m "deploy: RepoMind AI $(git describe --tags --abbrev=0 2>/dev/null || echo latest)"
+
           git remote add hf https://Satyam970:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}
           git push hf hf-deploy-branch:main --force
