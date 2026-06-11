@@ -16,7 +16,6 @@ import os
 import threading
 import time
 from contextlib import contextmanager
-from typing import Optional
 
 from src.core.logger import get_logger
 
