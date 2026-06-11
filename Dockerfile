@@ -24,15 +24,16 @@ COPY . .
 # Create log and memory dirs
 RUN mkdir -p logs repomind_memory
 
+EXPOSE 7860
 EXPOSE 8000
-EXPOSE 8501
 
 # Healthcheck for the FastAPI backend
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Start both services; use exec form for signal handling
+# HuggingFace Spaces requires port 7860
 CMD ["bash", "-c", \
-    "uvicorn backend.main:app --host 0.0.0.0 --port 8000 & \
-     streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0 & \
+    "uvicorn src.mcp.server:app --host 0.0.0.0 --port 9000 & \
+     uvicorn backend.main:app --host 0.0.0.0 --port 8000 & \
+     streamlit run frontend/app.py --server.port 7860 --server.address 0.0.0.0 --server.headless true & \
      wait -n"]
