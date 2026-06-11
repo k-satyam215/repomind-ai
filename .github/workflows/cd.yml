@@ -10,7 +10,6 @@ jobs:
   docker-publish:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    if: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
       - uses: actions/checkout@v4
