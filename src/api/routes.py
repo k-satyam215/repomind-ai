@@ -10,7 +10,6 @@ from src.agents.parallel_processor import apply_approved_fixes, process_issues_p
 from src.core.logger import get_logger
 from src.main import analyze_repository
 from src.observability.metrics import get_metrics
-from src.tools.dependency_graph import get_related_files
 from src.tools.diff_tools import generate_diff
 from src.tools.file_tools import read_file
 
@@ -205,7 +204,7 @@ def fix_stream(req: StreamFixRequest):
         # Strip markdown fences if present
         if assembled.startswith("```"):
             lines = assembled.splitlines()
-            assembled = "\n".join(l for l in lines if not l.startswith("```")).strip()
+            assembled = "\n".join(line for line in lines if not line.startswith("```")).strip()
 
         diff = generate_diff(old_code, assembled, req.file)
         yield f"data: {json.dumps({'type': 'done', 'fix': assembled, 'diff': diff, 'original': old_code})}\n\n"

@@ -1,8 +1,7 @@
 import asyncio
 import os
-from typing import Any, Dict, List, Optional
+from typing import List
 
-from src.agents.bug_detector import detect_bugs
 from src.agents.fix_generator import generate_fix, generate_multi_file_fix
 from src.agents.multi_file_patch_agent import apply_multi_file_patch
 from src.core.logger import get_logger

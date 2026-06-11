@@ -348,7 +348,7 @@ def finalize_node(state: AgentState) -> dict:
     logger.info(
         f"Run complete | bugs={bugs} fixes={fixes} "
         f"success_rate={fixes/bugs*100:.0f}% duration={duration_ms:.0f}ms"
-        if bugs > 0 else f"Run complete | no bugs found"
+        if bugs > 0 else "Run complete | no bugs found"
     )
     return {}
 
