@@ -45,7 +45,7 @@ def sev_badge(sev: str) -> str:
 
 # ─── Header ─────────────────────────────────────────────────────────────────
 st.markdown("# 🤖 RepoMind AI")
-st.caption("⚡ Autonomous Code Debugging Agent · v1.3.0")
+st.caption("⚡ Autonomous Code Debugging Agent · v1.4.0")
 st.divider()
 
 tab_analyze, tab_stream, tab_parallel, tab_metrics = st.tabs([
