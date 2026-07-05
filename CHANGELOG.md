@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.0] — 2026-07-05
+
+### Changed
+- **Migrated off deprecated Groq models.** `llama-3.3-70b-versatile` (used across
+  `bug_detector.py`, `fix_generator.py`, `repo_analyzer.py`, `reflection_agent.py`,
+  `planner_agent.py`) was deprecated by Groq on 2026-06-17. Replaced with Groq's
+  recommended successors, now configurable via env vars instead of hardcoded:
+  - `GROQ_MODEL_STRONG` (default `openai/gpt-oss-120b`) — bug detection, fix
+    generation, and repo structure analysis, where output quality matters most.
+  - `GROQ_MODEL_FAST` (default `openai/gpt-oss-20b`) — reflection summaries and
+    the binary retry/stop planner decision, where a smaller model is sufficient
+    and reduces retry-loop latency and cost.
+- `src/core/config.py` now exposes `GROQ_MODEL_STRONG` / `GROQ_MODEL_FAST` so
+  future model swaps require no code changes, only an env var update.
+- `.env.example` and `README.md` updated with the new model env vars.
+
+---
+
 ## [1.3.0] — 2025-06-12
 
 ### Added

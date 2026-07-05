@@ -1,13 +1,15 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
-from src.core.config import GROQ_API_KEY
+from src.core.config import GROQ_API_KEY, GROQ_MODEL_FAST
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.Reflection")
 
+# Reflection is a short (<150 word) failure-analysis summary, not code generation —
+# the fast/cheap model is sufficient and keeps retry-loop latency low.
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=GROQ_MODEL_FAST,
     api_key=GROQ_API_KEY,
     temperature=0
 )

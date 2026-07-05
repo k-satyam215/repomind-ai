@@ -1,13 +1,15 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
-from src.core.config import GROQ_API_KEY
+from src.core.config import GROQ_API_KEY, GROQ_MODEL_FAST
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.Planner")
 
+# Planner only ever outputs a single word ("retry" / "stop") — the fast/cheap
+# model is more than sufficient for this binary decision.
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=GROQ_MODEL_FAST,
     api_key=GROQ_API_KEY,
     temperature=0
 )

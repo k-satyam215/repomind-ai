@@ -209,6 +209,8 @@ docker pull satyam215/repomind-ai:latest
 |---|---|---|---|
 | `GROQ_API_KEY` | Yes | — | Get free at [console.groq.com](https://console.groq.com) |
 | `GITHUB_TOKEN` | No | — | GitHub PAT — needed only for PR creation |
+| `GROQ_MODEL_STRONG` | No | `openai/gpt-oss-120b` | Model for bug detection, fix generation, repo analysis |
+| `GROQ_MODEL_FAST` | No | `openai/gpt-oss-20b` | Model for reflection + retry/stop planning (cheap, low-latency calls) |
 | `MCP_URL` | No | `http://localhost:9000/tool` | MCP tool server endpoint |
 | `BACKEND_URL` | No | `http://localhost:8000` | Backend URL used by Streamlit |
 | `MAX_ANALYSIS_FILES` | No | `30` | Max files to run bug detection on |

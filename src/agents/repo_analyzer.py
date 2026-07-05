@@ -3,13 +3,13 @@ from typing import List
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
-from src.core.config import GROQ_API_KEY
+from src.core.config import GROQ_API_KEY, GROQ_MODEL_STRONG
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.RepoAnalyzer")
 
 llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=GROQ_MODEL_STRONG,
     api_key=GROQ_API_KEY,
     temperature=0
 )
