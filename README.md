@@ -319,6 +319,6 @@ MIT — see [LICENSE](LICENSE) for details.
 
 **Built by [Satyam Kumar](https://github.com/k-satyam215)**
 
-[GitHub](https://github.com/k-satyam215) · [LinkedIn](https://linkedin.com/in/satyam-kumar-ai)
+[GitHub](https://github.com/k-satyam215) · [LinkedIn](https://www.linkedin.com/in/satyam-kumar-266b38254)
 
 </div>
