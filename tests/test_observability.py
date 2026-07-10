@@ -1,8 +1,6 @@
 """
 Tests for src/observability/metrics — no LLM calls, pure logic.
 """
-import os
-import json
 import time
 
 import pytest
@@ -17,7 +15,6 @@ from src.observability.metrics import (
     record_run_summary,
     record_stage_latency,
     timed_stage,
-    METRICS_PATH,
 )
 
 

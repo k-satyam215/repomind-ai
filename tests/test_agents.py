@@ -4,11 +4,8 @@ All 70 tests pass with 0 warnings, no real API calls made.
 """
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from src.agents.patch_apply_agent import apply_patch
 from src.agents.test_runner_agent import run_tests
-
 
 # ─── patch_apply_agent ────────────────────────────────────────────────────────
 

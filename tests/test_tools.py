@@ -3,15 +3,12 @@ Tests for src/tools — no LLM calls, no network, pure logic.
 """
 import os
 
-import pytest
-
 from src.tools.ast_validator import validate_python_syntax
 from src.tools.dependency_graph import build_dependency_map, extract_imports, get_related_files
 from src.tools.diff_tools import generate_diff
 from src.tools.file_prioritizer import prioritize_files, score_file
 from src.tools.file_tools import read_file
 from src.tools.sandbox_patch import commit_sandbox_changes, create_sandbox_copy
-
 
 # ─── ast_validator ────────────────────────────────────────────────────────────
 
