@@ -5,6 +5,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.1] — 2026-07-28
+
+### Fixed
+- **Dependency versions updated** to resolve `HTTPConnectionPool Read timed out` error.
+  Root cause: `langchain-groq==0.1.3` does not support `openai/gpt-oss-*` model names
+  introduced by Groq's June 2026 migration, causing all LLM calls to fail silently
+  and the backend to hang until the 300s frontend timeout.
+  - `langchain-groq` bumped to `>=0.2.0,<0.3` (supports new model names)
+  - `langchain` / `langchain-core` bumped to `>=0.3.0,<0.4` (required by langchain-groq 0.2)
+  - `langgraph` bumped to `>=0.2.0,<0.4` (was `0.0.48`, breaking API changes)
+  - `uvicorn` bumped to `>=0.30,<0.35` + `[standard]` extras for better async performance
+  - `fastapi` bumped to `>=0.115,<0.116`
+- **Frontend timeout increased** from 300s to 600s to handle large repo clones.
+- **Better error messages** in Streamlit: timeout vs connection refused are now
+  shown as separate, actionable error messages.
+- **Backend start command** updated: `--timeout-keep-alive 600` added to uvicorn
+  invocation in `setup.sh` and `docker-compose.yml`.
+- **`uv.lock` should be regenerated** after this update: `uv lock` or delete the
+  old lock file and run `pip install -r requirements.txt` fresh.
+
+---
+
 ## [1.4.0] — 2026-07-05
 
 ### Changed

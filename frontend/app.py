@@ -86,9 +86,9 @@ with tab_analyze:
         else:
             bar = st.progress(0)
             try:
-                st.info("🔍 Cloning + analyzing...")
+                st.info("🔍 Cloning + analyzing... (this may take 2-5 minutes for large repos)")
                 bar.progress(30)
-                res = requests.post(f"{BACKEND}/analyze", json={"repo_url": repo}, timeout=300)
+                res = requests.post(f"{BACKEND}/analyze", json={"repo_url": repo}, timeout=600)
                 bar.progress(80)
                 data = res.json()
                 bar.progress(100)
@@ -97,6 +97,10 @@ with tab_analyze:
                 else:
                     st.session_state.analysis_data = data
                     st.success("✅ Analysis complete!")
+            except requests.exceptions.Timeout:
+                st.error("⏱ Request timed out. The repo may be too large or the backend is slow to start. Try again or use a smaller repo.")
+            except requests.exceptions.ConnectionError:
+                st.error("🔌 Cannot connect to backend. Make sure FastAPI is running at: " + BACKEND)
             except Exception as e:
                 st.error(str(e))
 
