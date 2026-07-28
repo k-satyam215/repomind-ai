@@ -98,7 +98,10 @@ with tab_analyze:
                     st.session_state.analysis_data = data
                     st.success("✅ Analysis complete!")
             except requests.exceptions.Timeout:
-                st.error("⏱ Request timed out. The repo may be too large or the backend is slow to start. Try again or use a smaller repo.")
+                st.error(
+                    "⏱ Request timed out. The repo may be too large or the "
+                    "backend is slow to start. Try again or use a smaller repo."
+                )
             except requests.exceptions.ConnectionError:
                 st.error("🔌 Cannot connect to backend. Make sure FastAPI is running at: " + BACKEND)
             except Exception as e:
