@@ -44,17 +44,17 @@ DO NOT report:
 Respond ONLY with valid JSON. No markdown, no backticks, no explanation.
 
 If a bug is found:
-{
+{{
   "bug": "...",
   "impact": "...",
   "fix_hint": "...",
   "severity": "critical|high|medium",
   "confidence": 0.0-1.0,
   "bug_type": "import_error|runtime_error|logic_error|deprecated_api|type_error|other"
-}
+}}
 
 If no bug:
-{"bug": "none", "impact": "none", "fix_hint": "none", "severity": "none", "confidence": 1.0, "bug_type": "none"}
+{{"bug": "none", "impact": "none", "fix_hint": "none", "severity": "none", "confidence": 1.0, "bug_type": "none"}}
 
 severity guide:
 - critical: causes immediate crash or data corruption
