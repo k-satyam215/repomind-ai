@@ -1,4 +1,5 @@
 import json
+import sys
 from typing import Optional
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -15,7 +16,14 @@ llm = ChatGroq(
     temperature=0
 )
 
-SYSTEM_PROMPT = """You are a senior Python debugging engineer.
+_PY_VERSION_STR = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+SYSTEM_PROMPT = f"""You are a senior Python debugging engineer.
+
+RUNTIME CONTEXT:
+- Python version: {_PY_VERSION_STR}
+- Flag bugs that are version-specific (e.g. only break on Python < 3.10)
+- Flag deprecated APIs for the CURRENT library versions in use
 
 Detect REALISTIC bugs that may break functionality at runtime.
 
@@ -25,7 +33,7 @@ Report:
 - Deprecated APIs (e.g. removed in newer library versions)
 - Incorrect library usage (wrong method signatures, wrong args)
 - Logic mistakes that produce wrong results
-- Version compatibility issues
+- Version compatibility issues (note affected Python/library versions)
 
 DO NOT report:
 - Style issues or PEP 8 violations

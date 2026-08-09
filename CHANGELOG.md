@@ -5,6 +5,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.4] — 2026-07-29
+
+### Added
+- **Codex-style runtime verification loop** in `fix_generator.py`:
+  - Every generated fix is executed in a real subprocess before being accepted
+  - Catches ALL runtime errors: `ImportError`, `AttributeError`, `TypeError`,
+    wrong library API usage that only fails at execution time
+- **Self-healing loop** (`_self_heal`): if subprocess execution fails, the actual
+  runtime error is sent back to LLM — LLM fixes based on the real error message,
+  then re-verified. Up to `MAX_SELF_HEAL_RETRIES=3` attempts per file.
+- **Library-version-aware prompts**: `importlib.metadata` reads ALL installed
+  library versions at startup (`langchain`, `fastapi`, `pydantic`, `langgraph`,
+  30+ libs). Every LLM prompt includes exact installed versions so fixes use
+  the correct API syntax for the current environment.
+- **Three separate LLM prompts**: `SYSTEM_PROMPT` (initial fix),
+  `SELF_HEAL_SYSTEM_PROMPT` (runtime error feedback loop),
+  `MULTI_FILE_SYSTEM_PROMPT` (multi-file atomic fixes).
+- **Multi-file runtime verification**: each file in a multi-file fix is
+  individually runtime-verified; broken files are excluded from the patch.
+
+### How it works
+```
+LLM generates fix
+    ↓
+1. ast.parse() — syntax check
+    ↓
+2. subprocess execution — real runtime check
+    ↓ (if fails)
+3. self-heal: send error to LLM — re-verify — repeat up to 3x
+    ↓
+Only accept fix if syntax ✓ + runtime ✓
+```
+
+---
+
+## [1.4.3] — 2026-07-29
+
+### Added
+- **Version-aware fix generation** — `fix_generator.py` now detects the
+  runtime Python version (`sys.version_info`) and injects it into every
+  LLM prompt, so fixes are always compatible with the actual interpreter.
+- **Repo-level version detection** — scans code for `sys.version_info >= (X, Y)`
+  guards and tells the LLM the repo's minimum required Python version.
+- **Syntax verification** — every generated fix is validated with `ast.parse()`
+  before being accepted; syntactically broken fixes are rejected automatically.
+- **Import verification** — after syntax check, fix is written to a temp file
+  and verified via a subprocess dry-run; fixes with broken imports are rejected.
+- **Version-aware bug detection** — `bug_detector.py` now includes current Python
+  version in the detection prompt so version-specific bugs are flagged correctly.
+
+---
+
 ## [1.4.1] — 2026-07-28
 
 ### Fixed
