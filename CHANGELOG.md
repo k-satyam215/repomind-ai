@@ -5,6 +5,47 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.5.0] — 2026-07-29
+
+### Added
+- **LangSmith tracing** — every LangChain/LangGraph/Groq LLM call is
+  automatically traced when `LANGSMITH_API_KEY` is set. Zero code changes
+  needed — `config.py` sets `LANGCHAIN_TRACING_V2=true` at startup.
+  View traces at `https://smith.langchain.com/projects/repomind-ai`.
+- **Redis caching** (`src/core/cache.py`) — analysis results cached by
+  repo URL (SHA-256 key, configurable TTL). Same repo analyzed again →
+  instant result from cache, no re-clone, no LLM calls.
+- **Redis memory** — `simple_memory.py` upgraded: uses Redis `RPUSH/LRANGE`
+  when available, falls back to local JSON file automatically.
+- **Integrations status panel** in Observability tab — shows Redis
+  (connected/not configured/unreachable) and LangSmith (enabled + direct
+  link to project traces) as live status cards.
+- **`force_refresh` parameter** on `analyze_repository()` — bypass cache
+  for a repo when explicitly requested.
+- **Footer updated**: `FastAPI · LangGraph · MCP · ChromaDB · Groq ·
+  LangSmith · Redis · Streamlit`
+
+### Changed
+- `src/core/config.py` — added `LANGSMITH_*` and `REDIS_*` config vars.
+- `.env.example` — fully documented with LangSmith + Redis setup instructions.
+- `requirements.txt` + `pyproject.toml` — added `langsmith>=0.3`, `redis>=5.0`.
+
+### Architecture
+```
+request hits /analyze
+    ↓
+Redis cache lookup (hash of repo_url)
+    ↓ HIT → return cached result instantly
+    ↓ MISS
+clone + LLM analyze (LangSmith traces every call)
+    ↓
+cache_set → Redis (TTL=1h)
+    ↓
+return result
+```
+
+---
+
 ## [1.4.4] — 2026-07-29
 
 ### Added

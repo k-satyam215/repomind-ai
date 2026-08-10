@@ -270,10 +270,31 @@ def metrics():
     """
     Live observability endpoint.
     Returns fix success rates, retry distribution, stage latencies,
-    severity breakdown, and recent run history.
+    severity breakdown, recent run history, Redis status, LangSmith status.
     """
     try:
-        return get_metrics()
+        from src.core.cache import cache_ping
+        from src.core.config import (
+            LANGSMITH_PROJECT,
+            LANGSMITH_TRACING_ENABLED,
+            REDIS_ENABLED,
+        )
+        data = get_metrics()
+        data["integrations"] = {
+            "redis": {
+                "enabled": REDIS_ENABLED,
+                "connected": cache_ping() if REDIS_ENABLED else False,
+            },
+            "langsmith": {
+                "enabled": LANGSMITH_TRACING_ENABLED,
+                "project": LANGSMITH_PROJECT if LANGSMITH_TRACING_ENABLED else None,
+                "url": (
+                    f"https://smith.langchain.com/projects/{LANGSMITH_PROJECT}"
+                    if LANGSMITH_TRACING_ENABLED else None
+                ),
+            },
+        }
+        return data
     except Exception as e:
         logger.error(f"Metrics endpoint error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

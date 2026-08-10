@@ -16,24 +16,43 @@ def _require(key: str) -> str:
 
 
 GROQ_API_KEY: str = _require("GROQ_API_KEY")
-GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")  # optional — only needed for PR creation
+GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")  # optional
 
-# ─── Model selection ──────────────────────────────────────────────────────
-# llama-3.1-8b-instant and llama-3.3-70b-versatile were deprecated by Groq
-# (announced 2026-06-17). Groq's official migration guidance:
-#   llama-3.1-8b-instant     -> openai/gpt-oss-20b
-#   llama-3.3-70b-versatile  -> openai/gpt-oss-120b (or qwen/qwen3.6-27b)
-# Kept configurable via env vars so future model swaps don't require code changes.
+# ─── Model selection ──────────────────────────────────────────────────────────
 GROQ_MODEL_STRONG: str = os.getenv("GROQ_MODEL_STRONG", "openai/gpt-oss-120b")
-# ^ bug detection, fix generation, repo analysis
 GROQ_MODEL_FAST: str = os.getenv("GROQ_MODEL_FAST", "openai/gpt-oss-20b")
-# ^ reflection, retry/stop planning
 
+# ─── LangSmith tracing ────────────────────────────────────────────────────────
+LANGSMITH_API_KEY: str = os.getenv("LANGSMITH_API_KEY", "")
+LANGSMITH_PROJECT: str = os.getenv("LANGSMITH_PROJECT", "repomind-ai")
+LANGSMITH_TRACING_ENABLED: bool = bool(
+    LANGSMITH_API_KEY
+    and os.getenv("LANGSMITH_TRACING", "true").lower() == "true"
+)
+
+# Auto-configure LangSmith env vars so all LangChain/LangGraph calls are traced
+if LANGSMITH_TRACING_ENABLED:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_API_KEY"] = LANGSMITH_API_KEY
+    os.environ["LANGCHAIN_PROJECT"] = LANGSMITH_PROJECT
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+
+# ─── Redis ────────────────────────────────────────────────────────────────────
+# Used for:
+#   1. Caching repo analysis results (avoid re-cloning same repo)
+#   2. Rate-limit tracking per repo URL
+#   3. Persistent job queue for async analysis (future)
+REDIS_URL: str = os.getenv("REDIS_URL", "")
+REDIS_ENABLED: bool = bool(REDIS_URL)
+REDIS_CACHE_TTL: int = int(os.getenv("REDIS_CACHE_TTL", "3600"))  # seconds
+
+# ─── URLs ─────────────────────────────────────────────────────────────────────
 MCP_URL: str = os.getenv("MCP_URL", "http://localhost:9000/tool")
 BACKEND_URL: str = os.getenv("BACKEND_URL", "http://localhost:8000")
 
+# ─── Tuning ───────────────────────────────────────────────────────────────────
 MAX_ANALYSIS_FILES: int = int(os.getenv("MAX_ANALYSIS_FILES", "30"))
 MAX_FIX_LINES: int = int(os.getenv("MAX_FIX_LINES", "150"))
 MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
-MCP_TIMEOUT: int = int(os.getenv("MCP_TIMEOUT", "30"))   # seconds
-TEST_TIMEOUT: int = int(os.getenv("TEST_TIMEOUT", "300")) # seconds
+MCP_TIMEOUT: int = int(os.getenv("MCP_TIMEOUT", "30"))
+TEST_TIMEOUT: int = int(os.getenv("TEST_TIMEOUT", "300"))

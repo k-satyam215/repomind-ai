@@ -523,6 +523,69 @@ with tab_metrics:
                     f"{run.get('duration_ms',0)/1000:.1f}s"
                 )
 
+            # ── Integrations status ─────────────────────────────────
+            integrations = m.get("integrations", {})
+            if integrations:
+                st.divider()
+                st.markdown("#### 🔌 Integrations")
+                ic1, ic2 = st.columns(2)
+
+                redis_info = integrations.get("redis", {})
+                with ic1:
+                    redis_ok = redis_info.get("connected", False)
+                    redis_enabled = redis_info.get("enabled", False)
+                    if not redis_enabled:
+                        st.markdown("""
+<div style='padding:14px;border-radius:12px;
+border:1px solid #334155;background:rgba(15,23,42,.6)'>
+<b>🟡 Redis</b><br>
+<span style='color:#94a3b8;font-size:.85rem'>Not configured —
+set <code>REDIS_URL</code> in .env to enable caching</span></div>""",
+                        unsafe_allow_html=True)
+                    elif redis_ok:
+                        st.markdown("""
+<div style='padding:14px;border-radius:12px;
+border:1px solid #22c55e;background:rgba(34,197,94,.07)'>
+<b>🟢 Redis</b><br>
+<span style='color:#4ade80;font-size:.85rem'>✔ Connected —
+Analysis results cached, memory persisted</span></div>""",
+                        unsafe_allow_html=True)
+                    else:
+                        st.markdown("""
+<div style='padding:14px;border-radius:12px;
+border:1px solid #ef4444;background:rgba(239,68,68,.07)'>
+<b>🔴 Redis</b><br>
+<span style='color:#f87171;font-size:.85rem'>✘ Configured but unreachable —
+check REDIS_URL</span></div>""",
+                        unsafe_allow_html=True)
+
+                langsmith_info = integrations.get("langsmith", {})
+                with ic2:
+                    ls_enabled = langsmith_info.get("enabled", False)
+                    ls_url = langsmith_info.get("url")
+                    ls_project = langsmith_info.get("project")
+                    if not ls_enabled:
+                        st.markdown("""
+<div style='padding:14px;border-radius:12px;
+border:1px solid #334155;background:rgba(15,23,42,.6)'>
+<b>🟡 LangSmith</b><br>
+<span style='color:#94a3b8;font-size:.85rem'>Not configured —
+set <code>LANGSMITH_API_KEY</code> to enable LLM tracing</span></div>""",
+                        unsafe_allow_html=True)
+                    else:
+                        link = (
+                            f"<a href='{ls_url}' target='_blank' "
+                            f"style='color:#818cf8'>View traces →</a>"
+                            if ls_url else ""
+                        )
+                        st.markdown(f"""
+<div style='padding:14px;border-radius:12px;
+border:1px solid #818cf8;background:rgba(129,140,248,.07)'>
+<b>🟣 LangSmith</b><br>
+<span style='color:#a5b4fc;font-size:.85rem'>✔ Tracing enabled —
+Project: <b>{ls_project}</b><br>{link}</span></div>""",
+                        unsafe_allow_html=True)
+
             with st.expander("Raw JSON"):
                 st.json(m)
         else:
@@ -532,4 +595,4 @@ with tab_metrics:
 
 # ─── Footer ─────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.caption("FastAPI · LangGraph · MCP · ChromaDB · Groq · Streamlit")
+st.caption("FastAPI · LangGraph · MCP · ChromaDB · Groq · LangSmith · Redis · Streamlit")

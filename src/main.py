@@ -6,6 +6,7 @@ import git
 
 from src.agents.bug_detector import detect_bugs
 from src.agents.repo_analyzer import analyze_repo_structure
+from src.core.cache import cache_get, cache_set
 from src.core.config import MAX_ANALYSIS_FILES
 from src.core.logger import get_logger
 from src.tools.dependency_graph import build_dependency_map
@@ -17,9 +18,12 @@ from src.utils.repo_parser import get_repo_structure
 logger = get_logger("RepoMind.Main")
 
 
-def analyze_repository(repo_url: str) -> dict:
+def analyze_repository(repo_url: str, force_refresh: bool = False) -> dict:
     """
     Clone a GitHub repo, analyze its architecture, and detect bugs.
+
+    Redis cache: if result is already cached and force_refresh=False,
+    returns cached result immediately (skips clone + LLM calls).
 
     Returns:
         {
@@ -27,9 +31,15 @@ def analyze_repository(repo_url: str) -> dict:
             "issues": list,
             "repo_path": str | None,
             "dependency_map": dict,
-            "repo_url": str
+            "repo_url": str,
+            "cache_hit": bool   # True if served from Redis cache
         }
     """
+    # ── Cache lookup ────────────────────────────────────────────────
+    if not force_refresh:
+        cached = cache_get(repo_url)
+        if cached:
+            return cached
     temp_dir = tempfile.mkdtemp(prefix="repomind_repo_")
     logger.info(f"Cloning: {repo_url} → {temp_dir}")
 
@@ -85,13 +95,19 @@ def analyze_repository(repo_url: str) -> dict:
 
         logger.info(f"Analysis complete. Issues found: {len(issues)}")
 
-        return {
+        result = {
             "analysis": analysis,
             "issues": issues,
             "repo_path": temp_dir,
             "dependency_map": dep_map,
-            "repo_url": repo_url
+            "repo_url": repo_url,
+            "cache_hit": False
         }
+
+        # ── Cache result for next time ────────────────────────────────
+        cache_set(repo_url, result)
+
+        return result
 
     except git.exc.GitCommandError as e:
         logger.error(f"Git clone failed: {e}")
