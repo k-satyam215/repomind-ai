@@ -2,7 +2,27 @@ version: "3.9"
 
 services:
 
-  # ── FastAPI Backend ──────────────────────────────────────────────────────────
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: repomind-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - repomind_redis:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
   backend:
     build:
       context: .
@@ -17,12 +37,16 @@ services:
       - PYTHONPATH=/app
       - MCP_URL=http://mcp:9000/tool
       - BACKEND_URL=http://backend:8000
+      - REDIS_URL=redis://redis:6379
     volumes:
       - .:/app
       - repomind_memory:/app/repomind_memory
       - repomind_logs:/app/logs
     depends_on:
-      - mcp
+      redis:
+        condition: service_healthy
+      mcp:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -31,7 +55,7 @@ services:
       start_period: 15s
     restart: unless-stopped
 
-  # ── MCP Tool Server ──────────────────────────────────────────────────────────
+  # ── MCP Tool Server ────────────────────────────────────────────────────────
   mcp:
     build:
       context: .
@@ -55,7 +79,7 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # ── Streamlit Frontend ───────────────────────────────────────────────────────
+  # ── Streamlit Frontend ─────────────────────────────────────────────────────
   frontend:
     build:
       context: .
@@ -76,7 +100,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-# ── Named Volumes ────────────────────────────────────────────────────────────
+# ── Named Volumes ──────────────────────────────────────────────────────────
 volumes:
   repomind_memory:
   repomind_logs:
+  repomind_redis:
