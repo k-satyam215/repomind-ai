@@ -45,7 +45,7 @@ def sev_badge(sev: str) -> str:
 
 # ─── Header ─────────────────────────────────────────────────────────────────
 st.markdown("# 🤖 RepoMind AI")
-st.caption("⚡ Autonomous Code Debugging Agent · v1.4.0")
+st.caption("⚡ Autonomous Code Debugging Agent · v1.5.0")
 st.divider()
 
 tab_analyze, tab_stream, tab_parallel, tab_metrics = st.tabs([
@@ -84,19 +84,70 @@ with tab_analyze:
         if not repo.strip():
             st.error("Enter a valid GitHub URL")
         else:
+            progress_box = st.empty()
+            status_box = st.empty()
             bar = st.progress(0)
+
+            stage_progress = {
+                "start":      (5,  "🔗 Connecting..."),
+                "cache":      (100, "⚡ Cache hit — instant result!"),
+                "clone":      (15, "📥 Cloning repository..."),
+                "parse":      (30, "🔍 Parsing file structure..."),
+                "deps":       (45, "🕸️  Building dependency graph..."),
+                "analyze":    (60, "🧠 Analyzing architecture..."),
+                "prioritize": (72, "📊 Prioritizing files..."),
+                "detect":     (85, "🐛 Detecting bugs in each file..."),
+                "complete":   (100, "✅ Analysis complete!"),
+                "error":      (0,  "❌ Error occurred"),
+            }
+
             try:
-                st.info("🔍 Cloning + analyzing... (this may take 2-5 minutes for large repos)")
-                bar.progress(30)
-                res = requests.post(f"{BACKEND}/analyze", json={"repo_url": repo}, timeout=600)
-                bar.progress(80)
-                data = res.json()
-                bar.progress(100)
-                if res.status_code != 200:
-                    st.error(data.get("detail", "Error"))
-                else:
-                    st.session_state.analysis_data = data
-                    st.success("✅ Analysis complete!")
+                with requests.post(
+                    f"{BACKEND}/analyze/stream",
+                    json={"repo_url": repo},
+                    stream=True,
+                    timeout=600
+                ) as r:
+                    for raw_line in r.iter_lines():
+                        if not raw_line:
+                            continue
+                        line = raw_line.decode("utf-8")
+                        if not line.startswith("data: "):
+                            continue
+
+                        payload = json.loads(line[6:])
+                        stage = payload.get("stage", "")
+                        message = payload.get("message", "")
+
+                        pct, label = stage_progress.get(stage, (bar, message))
+                        bar.progress(int(pct))
+                        progress_box.markdown(
+                            f"""
+<div style='padding:12px 16px;border-radius:10px;
+border:1px solid #334155;background:rgba(15,23,42,.8);
+font-size:.9rem;color:#e2e8f0;'>
+{message}
+</div>""",
+                            unsafe_allow_html=True
+                        )
+
+                        if stage == "complete":
+                            result = payload.get("result", {})
+                            if result:
+                                st.session_state.analysis_data = result
+                                cache_hit = result.get("cache_hit", False)
+                                if cache_hit:
+                                    status_box.success(
+                                        "⚡ Served from Redis cache — instant result!"
+                                    )
+                                else:
+                                    status_box.success("✅ Analysis complete!")
+                            break
+
+                        elif stage == "error":
+                            status_box.error(message)
+                            break
+
             except requests.exceptions.Timeout:
                 st.error(
                     "⏱ Request timed out. The repo may be too large or the "

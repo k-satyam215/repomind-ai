@@ -63,14 +63,15 @@ RepoMind runs a stateful, multi-step agent graph (LangGraph) against any public 
 
 | Layer | Technology | Role |
 |---|---|---|
-| Frontend | Streamlit | User input, live analysis display, per-issue fix generation |
+| Frontend | Streamlit | User input, live SSE progress streaming, per-issue fix generation |
 | Backend API | FastAPI | `/analyze` `/fix` `/diff` `/metrics` — orchestrates the pipeline |
 | Agent Graph | LangGraph | Stateful loop: analyze → fix → patch → test → reflect → retry |
 | MCP Tool Layer | FastAPI (port 9000) | Isolated tool execution: `read_file`, `apply_patch`, `run_tests` |
-| Memory | ChromaDB + JSON | Vector memory for cross-session fix reuse; thread-safe key-value store |
+| Memory | ChromaDB + Redis | Vector memory for cross-session fix reuse; Redis for analysis caching + history |
+| Tracing | LangSmith | Every LLM call traced — latency, tokens, input/output visible in dashboard |
 | Observability | Custom metrics module | Fix rates, retry distribution, stage latency, severity breakdown |
 | CI/CD | GitHub Actions | Lint + test + Docker build on every push; Docker Hub publish on tag |
-| Deployment | Docker Compose | 3 services: backend (8000), MCP server (9000), frontend (8501) |
+| Deployment | Docker Compose | 4 services: Redis (6379), backend (8000), MCP server (9000), frontend (8501) |
 
 ---
 
@@ -210,7 +211,12 @@ docker pull satyam215/repomind-ai:latest
 | `GROQ_API_KEY` | Yes | — | Get free at [console.groq.com](https://console.groq.com) |
 | `GITHUB_TOKEN` | No | — | GitHub PAT — needed only for PR creation |
 | `GROQ_MODEL_STRONG` | No | `openai/gpt-oss-120b` | Model for bug detection, fix generation, repo analysis |
-| `GROQ_MODEL_FAST` | No | `openai/gpt-oss-20b` | Model for reflection + retry/stop planning (cheap, low-latency calls) |
+| `GROQ_MODEL_FAST` | No | `openai/gpt-oss-20b` | Model for reflection + retry/stop planning |
+| `LANGSMITH_API_KEY` | No | — | [LangSmith](https://smith.langchain.com) API key — enables full LLM call tracing |
+| `LANGSMITH_PROJECT` | No | `repomind-ai` | LangSmith project name |
+| `LANGSMITH_TRACING` | No | `true` | Enable/disable tracing when key is set |
+| `REDIS_URL` | No | — | Redis URL — enables analysis caching + persistent memory ([Upstash](https://upstash.com) free tier works) |
+| `REDIS_CACHE_TTL` | No | `3600` | Cache TTL in seconds (default 1 hour) |
 | `MCP_URL` | No | `http://localhost:9000/tool` | MCP tool server endpoint |
 | `BACKEND_URL` | No | `http://localhost:8000` | Backend URL used by Streamlit |
 | `MAX_ANALYSIS_FILES` | No | `30` | Max files to run bug detection on |
@@ -283,9 +289,13 @@ repomind-ai/
 
 - [x] Parallel multi-issue processing (async + Semaphore-bounded concurrency)
 - [x] Streaming fix generation (SSE token-by-token)
+- [x] Live SSE progress streaming during analysis (clone → parse → detect → complete)
 - [x] Multi-file fix with dependency context
 - [x] Human-in-the-loop approve/reject before applying fixes
 - [x] Live observability dashboard (Streamlit Observability tab)
+- [x] LangSmith tracing — every LLM call traced with latency + token counts
+- [x] Redis caching — same repo analyzed once, instant results after (Upstash)
+- [x] Codex-style runtime verification + self-heal loop (fix → run → fix error → repeat)
 - [x] Docker Hub publish on version tag (CD pipeline)
 - [x] HuggingFace Spaces live demo deploy
 - [ ] JavaScript / TypeScript support

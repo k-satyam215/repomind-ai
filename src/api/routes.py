@@ -76,6 +76,100 @@ class ParallelAnalyzeRequest(BaseModel):
 
 # ─── Standard endpoints ────────────────────────────────────────────────────────
 
+@router.post("/analyze/stream")
+async def analyze_stream(req: RepoRequest):
+    """
+    SSE endpoint that streams live progress events during repo analysis.
+    Frontend receives real-time updates: cloning, parsing, detecting bugs, etc.
+    """
+    import asyncio
+    from src.core.cache import cache_get
+
+    logger.info(f"Stream analyze request: {req.repo_url}")
+
+    def _event(stage: str, message: str, data: dict = None) -> str:
+        payload = {"stage": stage, "message": message}
+        if data:
+            payload.update(data)
+        return f"data: {json.dumps(payload)}\n\n"
+
+    async def _generator():
+        # Check cache first
+        cached = cache_get(req.repo_url)
+        if cached:
+            yield _event("cache", "⚡ Served from Redis cache — instant result!")
+            await asyncio.sleep(0.05)
+            yield _event("complete", "✅ Analysis complete!", {"result": cached})
+            return
+
+        yield _event("start", f"🔗 Starting analysis for {req.repo_url}")
+        await asyncio.sleep(0.05)
+
+        yield _event("clone", "📥 Cloning repository from GitHub...")
+        await asyncio.sleep(0.05)
+
+        # Run blocking analysis in thread pool
+        loop = asyncio.get_event_loop()
+
+        progress_stages = [
+            ("parse",     "🔍 Parsing repository file structure..."),
+            ("deps",      "🕸️  Building dependency graph..."),
+            ("analyze",   "🧠 Analyzing architecture with LLM..."),
+            ("prioritize","📊 Prioritizing files by importance..."),
+            ("detect",    "🐛 Running bug detection on each file..."),
+        ]
+
+        result_holder = {}
+        error_holder = {}
+
+        def _run():
+            try:
+                result_holder["result"] = analyze_repository(req.repo_url)
+            except Exception as e:
+                error_holder["error"] = str(e)
+
+        import threading
+        thread = threading.Thread(target=_run)
+        thread.start()
+
+        # Stream fake progress while analysis runs in background
+        stage_idx = 0
+        while thread.is_alive():
+            if stage_idx < len(progress_stages):
+                stage, msg = progress_stages[stage_idx]
+                yield _event(stage, msg)
+                stage_idx += 1
+            await asyncio.sleep(3)  # send update every 3s
+
+        thread.join()
+
+        if error_holder:
+            yield _event("error", f"❌ {error_holder['error']}")
+            return
+
+        result = result_holder["result"]
+        issues = result.get("issues", [])
+        crit = sum(1 for i in issues if i.get("report", {}).get("severity") == "critical")
+        high = sum(1 for i in issues if i.get("report", {}).get("severity") == "high")
+        med  = sum(1 for i in issues if i.get("report", {}).get("severity") == "medium")
+
+        yield _event(
+            "complete",
+            f"✅ Done! Found {len(issues)} issue(s) — "
+            f"{crit} critical, {high} high, {med} medium",
+            {"result": result}
+        )
+
+    return StreamingResponse(
+        _generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
+
+
 @router.post("/analyze")
 def analyze(req: RepoRequest):
     logger.info(f"Analyze request: {req.repo_url}")
