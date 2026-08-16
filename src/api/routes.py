@@ -83,6 +83,7 @@ async def analyze_stream(req: RepoRequest):
     Frontend receives real-time updates: cloning, parsing, detecting bugs, etc.
     """
     import asyncio
+
     from src.core.cache import cache_get
 
     logger.info(f"Stream analyze request: {req.repo_url}")
@@ -109,7 +110,6 @@ async def analyze_stream(req: RepoRequest):
         await asyncio.sleep(0.05)
 
         # Run blocking analysis in thread pool
-        loop = asyncio.get_event_loop()
 
         progress_stages = [
             ("parse",     "🔍 Parsing repository file structure..."),
