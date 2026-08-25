@@ -33,7 +33,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
 
 # HuggingFace Spaces requires port 7860
 CMD ["bash", "-c", \
-    "uvicorn src.mcp.server:app --host 0.0.0.0 --port 9000 & \
+    "uvicorn src.mcp.server:app --host 127.0.0.1 --port 9000 & \
      uvicorn backend.main:app --host 0.0.0.0 --port 8000 & \
      streamlit run frontend/app.py --server.port 7860 --server.address 0.0.0.0 --server.headless true & \
      wait -n"]

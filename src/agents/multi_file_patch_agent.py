@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 from src.core.logger import get_logger
 
@@ -20,12 +21,15 @@ def apply_multi_file_patch(repo_path: str, file_changes: dict[str, str]) -> dict
     if not file_changes:
         return {"success": True, "changed_files": []}
 
+    # The public API validates paths before calling this low-level helper.
+    paths = {fname: os.path.join(repo_path, fname) for fname in file_changes}
+
     backups: dict[str, str] = {}
     changed = list(file_changes.keys())
 
     # Phase 1: backup all targets
     for fname in changed:
-        fpath = os.path.join(repo_path, fname)
+        fpath = paths[fname]
         if not os.path.exists(fpath):
             logger.warning(f"Multi-file patch: file not found '{fname}' — skipping")
             continue
@@ -44,9 +48,9 @@ def apply_multi_file_patch(repo_path: str, file_changes: dict[str, str]) -> dict
         for fname, new_code in file_changes.items():
             if fname not in backups:
                 continue
-            fpath = os.path.join(repo_path, fname)
-            tmp_path = fpath + ".tmp"
-            with open(tmp_path, "w", encoding="utf-8") as f:
+            fpath = paths[fname]
+            fd, tmp_path = tempfile.mkstemp(prefix=".repomind-", dir=os.path.dirname(fpath), text=True)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(new_code)
             os.replace(tmp_path, fpath)
             written.append(fname)
@@ -68,7 +72,7 @@ def apply_multi_file_patch(repo_path: str, file_changes: dict[str, str]) -> dict
             if bak and os.path.exists(bak):
                 import shutil
                 try:
-                    shutil.copy2(bak, os.path.join(repo_path, fname))
+                    shutil.copy2(bak, paths[fname])
                     logger.info(f"Rolled back '{fname}'")
                 except Exception as rb_err:
                     logger.error(f"Rollback failed for '{fname}': {rb_err}")

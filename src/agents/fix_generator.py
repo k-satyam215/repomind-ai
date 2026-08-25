@@ -10,7 +10,7 @@ from typing import Generator
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 
-from src.core.config import GROQ_API_KEY, GROQ_MODEL_STRONG, MAX_FIX_LINES
+from src.core.config import GROQ_API_KEY, GROQ_MODEL_STRONG, MAX_FIX_LINES, RUN_RUNTIME_VALIDATION
 from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.FixGenerator")
@@ -306,8 +306,10 @@ def generate_fix(file: str, code: str, bug: dict, repo_path: str = "") -> str:
                 return code
             return fix
 
-        # Step 3: Runtime verification
-        runtime_ok, runtime_err = _run_in_subprocess(fix, repo_path)
+        # Running generated code is opt-in because it is not a security sandbox.
+        runtime_ok, runtime_err = (True, "")
+        if RUN_RUNTIME_VALIDATION:
+            runtime_ok, runtime_err = _run_in_subprocess(fix, repo_path)
         if not runtime_ok:
             logger.warning(
                 f"Runtime error in fix: {runtime_err[:100]} — self-heal starting"

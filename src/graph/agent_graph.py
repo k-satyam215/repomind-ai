@@ -106,7 +106,25 @@ def fix_node(state: AgentState) -> dict:
 
     if retry_count >= MAX_RETRIES:
         logger.warning(f"Max retries ({MAX_RETRIES}) reached — moving to next issue")
-        return {"action": "next_issue"}
+        issue = _current_issue(state)
+        severity = issue.get("report", {}).get("severity", "medium") if issue else "medium"
+        record_fix_result(success=False, retry_count=retry_count, severity=severity)
+        results = list(state.get("issue_results", []))
+        results.append({
+            "file": issue.get("file", "unknown") if issue else "unknown",
+            "success": False,
+            "retries": retry_count,
+            "pr_url": None,
+            "severity": severity,
+        })
+        next_idx = state.get("current_issue_index", 0) + 1
+        return {
+            "issue_results": results,
+            "current_issue_index": next_idx,
+            "retry_count": 0,
+            "reflection": "",
+            "action": "stop" if next_idx >= len(state.get("repo_data", {}).get("issues", [])) else "next_issue",
+        }
 
     issue = _current_issue(state)
     if issue is None:
@@ -149,7 +167,15 @@ def fix_node(state: AgentState) -> dict:
         context += f"\n### PREVIOUS ATTEMPT FAILED — REASON\n{reflection}\n"
 
     with timed_stage("fix_generate"):
-        fix = generate_fix(main_file, context, issue["report"])
+        fix = generate_fix(main_file, context, issue["report"], repo_path)
+
+    if fix == main_code:
+        logger.warning(f"No code change generated for '{main_file}'")
+        return {
+            "retry_count": retry_count + 1,
+            "reflection": "The generated fix did not change the original file.",
+            "action": "retry",
+        }
 
     # Validate the fix is valid Python BEFORE applying it
     validation = validate_python_syntax(fix)

@@ -7,7 +7,7 @@ import git
 from src.agents.bug_detector import detect_bugs
 from src.agents.repo_analyzer import analyze_repo_structure
 from src.core.cache import cache_get, cache_set
-from src.core.config import MAX_ANALYSIS_FILES
+from src.core.config import MAX_ANALYSIS_FILES, REPO_WORKSPACE_ROOT
 from src.core.logger import get_logger
 from src.tools.dependency_graph import build_dependency_map
 from src.tools.file_prioritizer import prioritize_files
@@ -40,7 +40,8 @@ def analyze_repository(repo_url: str, force_refresh: bool = False) -> dict:
         cached = cache_get(repo_url)
         if cached:
             return cached
-    temp_dir = tempfile.mkdtemp(prefix="repomind_repo_")
+    os.makedirs(REPO_WORKSPACE_ROOT, mode=0o700, exist_ok=True)
+    temp_dir = tempfile.mkdtemp(prefix="repo_", dir=REPO_WORKSPACE_ROOT)
     logger.info(f"Cloning: {repo_url} → {temp_dir}")
 
     try:

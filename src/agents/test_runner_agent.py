@@ -22,12 +22,21 @@ def run_tests(repo_path: str) -> dict:
         return {"success": False, "output": "Invalid repo path"}
 
     try:
+        # Do not pass provider/GitHub credentials to code from an untrusted repo.
+        safe_env = {
+            key: os.environ[key]
+            for key in ("PATH", "SYSTEMROOT", "WINDIR", "HOME", "TMP", "TEMP", "PYTHONIOENCODING")
+            if key in os.environ
+        }
+        safe_env["PYTHONNOUSERSITE"] = "1"
+        safe_env["PYTHONDONTWRITEBYTECODE"] = "1"
         result = subprocess.run(
             [sys.executable, "-m", "pytest", "--tb=short", "-q"],
             cwd=repo_path,
             capture_output=True,
             text=True,
-            timeout=TEST_TIMEOUT
+            timeout=TEST_TIMEOUT,
+            env=safe_env,
         )
 
         output = (result.stdout or "") + (result.stderr or "")

@@ -1,5 +1,5 @@
 import os
-import shutil
+import tempfile
 
 from src.core.logger import get_logger
 
@@ -10,32 +10,30 @@ def apply_patch(repo_path: str, file: str, new_code: str) -> dict:
     """
     Write new_code to the target file atomically.
 
-    Strategy:
-    1. Write to a temp file alongside the target
-    2. Rename (atomic on POSIX) to replace original
-    3. Keep .bak backup in case rollback is needed
+    Writes to a temp file alongside the target and atomically replaces it.
+    No backup artifact is left in the repository.
 
     Returns {"success": True} or {"success": False, "error": "..."}
     """
     if not new_code or not new_code.strip():
         return {"success": False, "error": "New code is empty — patch rejected"}
 
+    # The public API and MCP server validate the repository boundary before
+    # calling this low-level helper. Keep the helper reusable in local tooling.
     file_path = os.path.join(repo_path, file)
 
     if not os.path.exists(file_path):
         logger.error(f"File not found for patch: {file_path}")
         return {"success": False, "error": f"File not found: {file}"}
 
-    backup_path = file_path + ".bak"
-    tmp_path = file_path + ".tmp"
+    tmp_path = ""
 
     try:
-        # Step 1: backup original
-        shutil.copy2(file_path, backup_path)
-
-        # Step 2: write new content to temp file
-        with open(tmp_path, "w", encoding="utf-8") as f:
+        fd, tmp_path = tempfile.mkstemp(prefix=".repomind-", dir=os.path.dirname(file_path), text=True)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(new_code)
+            f.flush()
+            os.fsync(f.fileno())
 
         # Step 3: atomic replace
         os.replace(tmp_path, file_path)
@@ -46,16 +44,7 @@ def apply_patch(repo_path: str, file: str, new_code: str) -> dict:
     except Exception as e:
         logger.error(f"Patch failed for '{file}': {e}")
 
-        # Rollback: restore backup if exists
-        if os.path.exists(backup_path):
-            try:
-                shutil.copy2(backup_path, file_path)
-                logger.info(f"Rolled back to backup for: {file}")
-            except Exception as rollback_err:
-                logger.error(f"Rollback also failed for '{file}': {rollback_err}")
-
-        # Cleanup temp
-        if os.path.exists(tmp_path):
+        if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
         return {"success": False, "error": str(e)}

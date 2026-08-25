@@ -20,9 +20,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten in production
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[origin.strip() for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS", "http://localhost:7860,http://localhost:8501"
+    ).split(",") if origin.strip()],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 app.include_router(router)

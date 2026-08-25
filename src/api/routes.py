@@ -12,9 +12,15 @@ from src.main import analyze_repository
 from src.observability.metrics import get_metrics
 from src.tools.diff_tools import generate_diff
 from src.tools.file_tools import read_file
+from src.core.security import managed_file_path, managed_repo_path
 
 logger = get_logger("RepoMind.Routes")
 router = APIRouter()
+
+
+def _repo_file(repo_path: str, file: str) -> str:
+    """Resolve an API-supplied file path inside a RepoMind-managed clone only."""
+    return str(managed_file_path(repo_path, file))
 
 
 # ─── Request models ────────────────────────────────────────────────────────────
@@ -189,11 +195,13 @@ def analyze(req: RepoRequest):
 def fix(req: FixRequest):
     logger.info(f"Fix request: {req.file}")
     try:
-        old_code = read_file(f"{req.repo_path}/{req.file}")
+        old_code = read_file(_repo_file(req.repo_path, req.file))
         if not old_code:
             raise HTTPException(status_code=404, detail=f"File not found or empty: {req.file}")
         new_code = generate_fix(req.file, old_code, req.bug)
         return {"old": old_code, "new": new_code}
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -211,13 +219,13 @@ def fix_multi(req: MultiFileFixRequest):
     try:
         # Build files context
         files_context: dict[str, str] = {}
-        main_code = read_file(f"{req.repo_path}/{req.file}")
+        main_code = read_file(_repo_file(req.repo_path, req.file))
         if not main_code:
             raise HTTPException(status_code=404, detail=f"File not found: {req.file}")
         files_context[req.file] = main_code
 
         for rf in req.related_files[:3]:
-            rf_code = read_file(f"{req.repo_path}/{rf}")
+            rf_code = read_file(_repo_file(req.repo_path, rf))
             if rf_code:
                 files_context[rf] = rf_code
 
@@ -241,6 +249,8 @@ def fix_multi(req: MultiFileFixRequest):
             "changed_file_count": len(fixed_files)
         }
 
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -256,10 +266,15 @@ def approve_fix(req: ApproveFixRequest):
     """
     logger.info(f"Applying {len(req.approved_fixes)} approved fix(es) to {req.repo_path}")
     try:
-        result = apply_approved_fixes(req.repo_path, req.approved_fixes)
+        repo_path = str(managed_repo_path(req.repo_path))
+        for file in req.approved_fixes:
+            _repo_file(repo_path, file)
+        result = apply_approved_fixes(repo_path, req.approved_fixes)
         if not result.get("success"):
             raise HTTPException(status_code=500, detail=result.get("error", "Apply failed"))
         return result
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
@@ -275,7 +290,10 @@ def fix_stream(req: StreamFixRequest):
     """
     logger.info(f"Streaming fix request: {req.file}")
 
-    old_code = read_file(f"{req.repo_path}/{req.file}")
+    try:
+        old_code = read_file(_repo_file(req.repo_path, req.file))
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     if not old_code:
         raise HTTPException(status_code=404, detail=f"File not found: {req.file}")
 
@@ -334,7 +352,7 @@ async def analyze_parallel(req: ParallelAnalyzeRequest):
 
         # Step 2: process all issues in parallel
         processed = await process_issues_parallel(
-            issues, repo_path, dep_map, max_concurrent=req.max_concurrent
+            issues, str(managed_repo_path(repo_path)), dep_map, max_concurrent=min(max(req.max_concurrent, 1), 5)
         )
 
         return {
