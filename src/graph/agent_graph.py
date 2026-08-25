@@ -72,6 +72,16 @@ def _current_issue(state: AgentState) -> dict | None:
     return issues[idx] if idx < len(issues) else None
 
 
+def _route_after_fix(state: AgentState) -> str:
+    """Route terminal/skip/retry outcomes without attempting an empty patch."""
+    action = state.get("action")
+    if action in {"retry", "next_issue", "next"}:
+        return "fix"
+    if action in {"stop", "done"}:
+        return "finalize"
+    return "apply_patch"
+
+
 # ─── Nodes ────────────────────────────────────────────────────────────────────
 
 def analysis_node(state: AgentState) -> dict:
@@ -145,9 +155,24 @@ def fix_node(state: AgentState) -> dict:
 
     if not main_code:
         logger.error(f"Could not read main file: {main_file}")
-        return {"action": "next_issue"}
-
-    context += f"### FILE: {main_file}\n{main_code}\n"
+        severity = issue.get("report", {}).get("severity", "medium")
+        record_fix_result(success=False, retry_count=retry_count, severity=severity)
+        results = list(state.get("issue_results", []))
+        results.append({
+            "file": main_file,
+            "success": False,
+            "retries": retry_count,
+            "pr_url": None,
+            "severity": severity,
+        })
+        next_idx = state.get("current_issue_index", 0) + 1
+        return {
+            "issue_results": results,
+            "current_issue_index": next_idx,
+            "retry_count": 0,
+            "reflection": "",
+            "action": "stop" if next_idx >= len(state.get("repo_data", {}).get("issues", [])) else "next_issue",
+        }
 
     for rf in related_files[:3]:
         rf_res = mcp_call("read_file", {"path": os.path.join(repo_path, rf)})
@@ -167,7 +192,7 @@ def fix_node(state: AgentState) -> dict:
         context += f"\n### PREVIOUS ATTEMPT FAILED — REASON\n{reflection}\n"
 
     with timed_stage("fix_generate"):
-        fix = generate_fix(main_file, context, issue["report"], repo_path)
+        fix = generate_fix(main_file, main_code, issue["report"], repo_path, context)
 
     if fix == main_code:
         logger.warning(f"No code change generated for '{main_file}'")
@@ -385,7 +410,9 @@ def build_graph():
     graph = StateGraph(AgentState)
 
     graph.add_node("analysis", analysis_node)
-    graph.add_node("fix", fix_node)
+    # Node identifiers must not reuse state-field names (e.g. ``fix``), which
+    # LangGraph treats as channels when compiling the state graph.
+    graph.add_node("generate_fix", fix_node)
     graph.add_node("apply_patch", apply_patch_node)
     graph.add_node("test", test_node)
     graph.add_node("reflect", reflection_node)
@@ -393,8 +420,16 @@ def build_graph():
 
     graph.set_entry_point("analysis")
 
-    graph.add_edge("analysis", "fix")
-    graph.add_edge("fix", "apply_patch")
+    graph.add_edge("analysis", "generate_fix")
+    graph.add_conditional_edges(
+        "generate_fix",
+        _route_after_fix,
+        {
+            "fix": "generate_fix",
+            "apply_patch": "apply_patch",
+            "finalize": "finalize",
+        },
+    )
     graph.add_edge("apply_patch", "test")
     graph.add_edge("test", "reflect")
 
@@ -402,11 +437,11 @@ def build_graph():
         "reflect",
         lambda s: s.get("action", "stop"),
         {
-            "retry": "fix",
-            "next_issue": "fix",   # advance index, reset retry, loop back
+            "retry": "generate_fix",
+            "next_issue": "generate_fix",   # advance index, reset retry, loop back
             "done": "finalize",
             "stop": "finalize",
-            "next": "fix"          # alias for next_issue (planner compatibility)
+            "next": "generate_fix"          # alias for next_issue (planner compatibility)
         }
     )
 

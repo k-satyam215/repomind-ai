@@ -10,10 +10,10 @@ from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.BugDetector")
 
-llm = ChatGroq(
-    model=GROQ_MODEL_STRONG,
-    api_key=GROQ_API_KEY,
-    temperature=0
+llm = (
+    ChatGroq(model=GROQ_MODEL_STRONG, api_key=GROQ_API_KEY, temperature=0)
+    if GROQ_API_KEY
+    else None
 )
 
 _PY_VERSION_STR = f"{sys.version_info.major}.{sys.version_info.minor}"
@@ -78,6 +78,10 @@ def detect_bugs(file: str, code: str) -> Optional[dict]:
     - detection failed
     """
     if not code or not code.strip():
+        return None
+
+    if llm is None:
+        logger.warning("Groq is not configured; bug detection skipped")
         return None
 
     logger.debug(f"Detecting bugs in: {file}")

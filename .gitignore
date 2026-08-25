@@ -33,3 +33,9 @@ repomind_memory/
 # Temporary repos cloned by agent
 repomind_repo_*/
 repomind_*/
+
+# Local test, lint, and agent work artifacts
+.pytest_cache/
+.ruff_cache/
+pytest-cache-files-*/
+work/

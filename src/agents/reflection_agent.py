@@ -8,10 +8,10 @@ logger = get_logger("RepoMind.Reflection")
 
 # Reflection is a short (<150 word) failure-analysis summary, not code generation —
 # the fast/cheap model is sufficient and keeps retry-loop latency low.
-llm = ChatGroq(
-    model=GROQ_MODEL_FAST,
-    api_key=GROQ_API_KEY,
-    temperature=0
+llm = (
+    ChatGroq(model=GROQ_MODEL_FAST, api_key=GROQ_API_KEY, temperature=0)
+    if GROQ_API_KEY
+    else None
 )
 
 SYSTEM_PROMPT = """You are an expert debugging engineer reviewing a failed automated fix.
@@ -28,6 +28,9 @@ Keep response under 150 words. Be direct."""
 
 def reflect_on_failure(bug: dict, fix: str, test_output: str) -> str:
     logger.info("Reflecting on failed fix attempt")
+
+    if llm is None:
+        return "LLM reflection unavailable because GROQ_API_KEY is not configured."
 
     try:
         content = (
