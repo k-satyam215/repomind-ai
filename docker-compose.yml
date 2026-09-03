@@ -6,8 +6,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: repomind-redis
-    ports:
-      - "6379:6379"
     volumes:
       - repomind_redis:/data
     command: >
@@ -30,7 +28,7 @@ services:
     container_name: repomind-backend
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload --timeout-keep-alive 600
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file:
       - .env
     environment:
@@ -62,8 +60,6 @@ services:
       dockerfile: Dockerfile
     container_name: repomind-mcp
     command: uvicorn src.mcp.server:app --host 0.0.0.0 --port 9000
-    ports:
-      - "9000:9000"
     env_file:
       - .env
     environment:

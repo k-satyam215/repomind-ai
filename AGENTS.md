@@ -164,11 +164,13 @@ Live at `GET /metrics` on the backend.
 
 1. `create_sandbox_copy(repo_path)` — `shutil.copytree` excluding `.git`
 2. All patches applied to sandbox
-3. pytest runs on sandbox
-4. On success: `commit_sandbox_changes(sandbox, original)` — copies sandbox back
+3. pytest runs on the sandbox with RepoMind credentials removed from its environment
+4. On success: `commit_sandbox_changes(sandbox, original)` promotes only changed source files
 5. On failure or exception: sandbox deleted in `reflect` node's `finally` block
 
-This guarantees zero artifacts from failed fix attempts.
+This guarantees zero artifacts from failed fix attempts. The local executor is an
+isolation boundary for development, not a replacement for a dedicated container/VM
+sandbox when analyzing hostile code.
 
 ---
 
