@@ -80,8 +80,14 @@ def analysis_node(state: AgentState) -> dict:
 
     logger.info(f"[{run_id}] Analyzing repo: {state['repo_url']}")
 
+    # The autonomous fix pipeline needs a real, existing repo_path to patch
+    # files in -- a cached analysis result has repo_path=None (its temp dir
+    # from a previous run no longer exists), which would crash apply_patch_node.
+    # force_refresh=True guarantees a fresh clone every time this graph runs.
+    # (The separate /analyze API endpoint, used for report-only previews, is
+    # unaffected and still benefits from the cache.)
     with timed_stage("analyze"):
-        result = analyze_repository(state["repo_url"])
+        result = analyze_repository(state["repo_url"], force_refresh=True)
 
     # Record each detected bug's metadata
     for issue in result.get("issues", []):
@@ -106,7 +112,25 @@ def fix_node(state: AgentState) -> dict:
 
     if retry_count >= MAX_RETRIES:
         logger.warning(f"Max retries ({MAX_RETRIES}) reached — moving to next issue")
-        return {"action": "next_issue"}
+        issue = _current_issue(state)
+        severity = issue.get("report", {}).get("severity", "medium") if issue else "medium"
+        record_fix_result(success=False, retry_count=retry_count, severity=severity)
+        results = list(state.get("issue_results", []))
+        results.append({
+            "file": issue.get("file", "unknown") if issue else "unknown",
+            "success": False,
+            "retries": retry_count,
+            "pr_url": None,
+            "severity": severity,
+        })
+        next_idx = state.get("current_issue_index", 0) + 1
+        return {
+            "issue_results": results,
+            "current_issue_index": next_idx,
+            "retry_count": 0,
+            "reflection": "",
+            "action": "stop" if next_idx >= len(state.get("repo_data", {}).get("issues", [])) else "next_issue",
+        }
 
     issue = _current_issue(state)
     if issue is None:
@@ -127,7 +151,26 @@ def fix_node(state: AgentState) -> dict:
 
     if not main_code:
         logger.error(f"Could not read main file: {main_file}")
-        return {"action": "next_issue"}
+        # Must advance current_issue_index here, same as the max-retries branch
+        # above -- otherwise "next_issue" loops back to "fix" for the SAME
+        # unreadable file forever (current_issue_index never changes), an
+        # infinite loop rather than actually skipping to the next issue.
+        results = list(state.get("issue_results", []))
+        results.append({
+            "file": main_file,
+            "success": False,
+            "retries": retry_count,
+            "pr_url": None,
+            "severity": issue.get("report", {}).get("severity", "medium"),
+        })
+        next_idx = state.get("current_issue_index", 0) + 1
+        return {
+            "issue_results": results,
+            "current_issue_index": next_idx,
+            "retry_count": 0,
+            "reflection": "",
+            "action": "stop" if next_idx >= len(state.get("repo_data", {}).get("issues", [])) else "next_issue",
+        }
 
     context += f"### FILE: {main_file}\n{main_code}\n"
 
@@ -149,7 +192,15 @@ def fix_node(state: AgentState) -> dict:
         context += f"\n### PREVIOUS ATTEMPT FAILED — REASON\n{reflection}\n"
 
     with timed_stage("fix_generate"):
-        fix = generate_fix(main_file, context, issue["report"])
+        fix = generate_fix(main_file, context, issue["report"], repo_path)
+
+    if fix == main_code:
+        logger.warning(f"No code change generated for '{main_file}'")
+        return {
+            "retry_count": retry_count + 1,
+            "reflection": "The generated fix did not change the original file.",
+            "action": "retry",
+        }
 
     # Validate the fix is valid Python BEFORE applying it
     validation = validate_python_syntax(fix)
@@ -359,7 +410,12 @@ def build_graph():
     graph = StateGraph(AgentState)
 
     graph.add_node("analysis", analysis_node)
-    graph.add_node("fix", fix_node)
+    # Node name is "fix_agent", NOT "fix" -- AgentState has a state field
+    # literally named "fix" (stores the generated fix code), and this version
+    # of LangGraph raises "'fix' is already being used as a state key" if a
+    # node name collides with a state channel name. This was a genuine,
+    # graph-compile-time-fatal bug, confirmed by running the test suite.
+    graph.add_node("fix_agent", fix_node)
     graph.add_node("apply_patch", apply_patch_node)
     graph.add_node("test", test_node)
     graph.add_node("reflect", reflection_node)
@@ -367,8 +423,25 @@ def build_graph():
 
     graph.set_entry_point("analysis")
 
-    graph.add_edge("analysis", "fix")
-    graph.add_edge("fix", "apply_patch")
+    graph.add_edge("analysis", "fix_agent")
+
+    # fix_node has three early-return paths (max retries reached, unreadable
+    # file, no code change / syntax-invalid fix) that set an explicit "action"
+    # and must NOT reach apply_patch_node -- doing so would crash on missing
+    # state["current_file"]/state["fix"]. Only the "ready to patch" path
+    # (action=None) should proceed to apply_patch; every other action loops
+    # back to "fix_agent" (retry/next_issue) or ends the run (stop).
+    graph.add_conditional_edges(
+        "fix_agent",
+        lambda s: s.get("action") or "apply",
+        {
+            "apply": "apply_patch",
+            "retry": "fix_agent",
+            "next_issue": "fix_agent",
+            "stop": "finalize",
+        }
+    )
+
     graph.add_edge("apply_patch", "test")
     graph.add_edge("test", "reflect")
 
@@ -376,11 +449,11 @@ def build_graph():
         "reflect",
         lambda s: s.get("action", "stop"),
         {
-            "retry": "fix",
-            "next_issue": "fix",   # advance index, reset retry, loop back
+            "retry": "fix_agent",
+            "next_issue": "fix_agent",   # advance index, reset retry, loop back
             "done": "finalize",
             "stop": "finalize",
-            "next": "fix"          # alias for next_issue (planner compatibility)
+            "next": "fix_agent"          # alias for next_issue (planner compatibility)
         }
     )
 
