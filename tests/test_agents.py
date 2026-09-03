@@ -18,13 +18,12 @@ class TestPatchApplyAgent:
         assert result["success"] is True
         assert f.read_text(encoding="utf-8") == "x = 999"
 
-    def test_backup_created(self, tmp_path):
+    def test_patch_leaves_no_backup_artifact(self, tmp_path):
         f = tmp_path / "target.py"
         f.write_text("original", encoding="utf-8")
         apply_patch(str(tmp_path), "target.py", "new content")
-        backup = tmp_path / "target.py.bak"
-        assert backup.exists()
-        assert backup.read_text(encoding="utf-8") == "original"
+        assert f.read_text(encoding="utf-8") == "new content"
+        assert not (tmp_path / "target.py.bak").exists()
 
     def test_file_not_found(self, tmp_path):
         result = apply_patch(str(tmp_path), "missing.py", "x = 1")

@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 from dotenv import load_dotenv
 
@@ -15,7 +16,9 @@ def _require(key: str) -> str:
     return val
 
 
-GROQ_API_KEY: str = _require("GROQ_API_KEY")
+# Keep imports and the test suite usable without a provider credential. Calls to
+# the LLM still fail cleanly if a key has not been configured.
+GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
 GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")  # optional
 
 # ─── Model selection ──────────────────────────────────────────────────────────
@@ -56,3 +59,12 @@ MAX_FIX_LINES: int = int(os.getenv("MAX_FIX_LINES", "150"))
 MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
 MCP_TIMEOUT: int = int(os.getenv("MCP_TIMEOUT", "30"))
 TEST_TIMEOUT: int = int(os.getenv("TEST_TIMEOUT", "300"))
+
+# ─── Security ────────────────────────────────────────────────────────────────
+# All repositories handled by the HTTP API are cloned under this directory.
+REPO_WORKSPACE_ROOT: str = os.path.abspath(
+    os.getenv("REPO_WORKSPACE_ROOT", os.path.join(tempfile.gettempdir(), "repomind_repos"))
+)
+# Runtime execution of a generated file is disabled by default. Pytest remains
+# the validation mechanism, preferably inside an external sandbox in production.
+RUN_RUNTIME_VALIDATION: bool = os.getenv("RUN_RUNTIME_VALIDATION", "false").lower() == "true"

@@ -71,16 +71,16 @@ class TestDiffRoute:
 
 class TestFixRoute:
 
-    def test_missing_file_returns_404(self, tmp_path):
+    def test_unmanaged_repo_is_rejected(self, tmp_path):
         res = client.post("/fix", json={
             "repo_path": str(tmp_path),
             "file": "nonexistent.py",
             "bug": {"bug": "x", "impact": "y", "fix_hint": "z"}
         })
-        assert res.status_code == 404
+        assert res.status_code == 403
 
     @patch("src.api.routes.generate_fix")
-    def test_successful_fix(self, mock_fix, tmp_path):
+    def test_unmanaged_repo_cannot_be_read(self, mock_fix, tmp_path):
         f = tmp_path / "target.py"
         f.write_text("x = 1", encoding="utf-8")
 
@@ -92,10 +92,8 @@ class TestFixRoute:
             "bug": {"bug": "wrong value", "impact": "high", "fix_hint": "change to 999"}
         })
 
-        assert res.status_code == 200
-        data = res.json()
-        assert data["old"] == "x = 1"
-        assert data["new"] == "x = 999"
+        assert res.status_code == 403
+        mock_fix.assert_not_called()
 
 
 class TestMetricsRoute:
