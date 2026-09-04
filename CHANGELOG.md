@@ -84,4 +84,3 @@ All notable changes to this project are documented here.
 - SQLite-backed eval tracker (per-node latency, cost, pass/fail).
 - Groq (free-tier) LLM integration.
 - Initial test suite and GitHub Actions CI.
-'@ | Set-Content -Encoding utf8 CHANGELOG.md
