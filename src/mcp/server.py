@@ -8,7 +8,6 @@ from src.agents.test_runner_agent import run_tests
 from src.core.logger import get_logger
 from src.core.security import managed_file_path, managed_path, managed_repo_path
 from src.mcp.registry import TOOLS
-from src.core.security import managed_file_path, managed_path, managed_repo_path
 from src.tools.file_tools import read_file
 
 logger = get_logger("RepoMind.MCPServer")

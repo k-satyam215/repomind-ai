@@ -13,7 +13,6 @@ from src.main import analyze_repository
 from src.observability.metrics import get_metrics
 from src.tools.diff_tools import generate_diff
 from src.tools.file_tools import read_file
-from src.core.security import managed_file_path, managed_repo_path
 
 logger = get_logger("RepoMind.Routes")
 router = APIRouter()
