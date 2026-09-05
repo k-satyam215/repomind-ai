@@ -72,6 +72,16 @@ def _current_issue(state: AgentState) -> dict | None:
     return issues[idx] if idx < len(issues) else None
 
 
+def _route_after_fix(state: AgentState) -> str:
+    """Route terminal/skip/retry outcomes without attempting an empty patch."""
+    action = state.get("action")
+    if action in {"retry", "next_issue", "next"}:
+        return "fix"
+    if action in {"stop", "done"}:
+        return "finalize"
+    return "apply_patch"
+
+
 # ─── Nodes ────────────────────────────────────────────────────────────────────
 
 def analysis_node(state: AgentState) -> dict:
@@ -152,16 +162,18 @@ def fix_node(state: AgentState) -> dict:
     if not main_code:
         logger.error(f"Could not read main file: {main_file}")
         # Must advance current_issue_index here, same as the max-retries branch
-        # above -- otherwise "next_issue" loops back to "fix" for the SAME
-        # unreadable file forever (current_issue_index never changes), an
+        # above -- otherwise "next_issue" loops back to "generate_fix" for the
+        # SAME unreadable file forever (current_issue_index never changes), an
         # infinite loop rather than actually skipping to the next issue.
+        severity = issue.get("report", {}).get("severity", "medium")
+        record_fix_result(success=False, retry_count=retry_count, severity=severity)
         results = list(state.get("issue_results", []))
         results.append({
             "file": main_file,
             "success": False,
             "retries": retry_count,
             "pr_url": None,
-            "severity": issue.get("report", {}).get("severity", "medium"),
+            "severity": severity,
         })
         next_idx = state.get("current_issue_index", 0) + 1
         return {
@@ -171,8 +183,6 @@ def fix_node(state: AgentState) -> dict:
             "reflection": "",
             "action": "stop" if next_idx >= len(state.get("repo_data", {}).get("issues", [])) else "next_issue",
         }
-
-    context += f"### FILE: {main_file}\n{main_code}\n"
 
     for rf in related_files[:3]:
         rf_res = mcp_call("read_file", {"path": os.path.join(repo_path, rf)})
@@ -192,7 +202,7 @@ def fix_node(state: AgentState) -> dict:
         context += f"\n### PREVIOUS ATTEMPT FAILED — REASON\n{reflection}\n"
 
     with timed_stage("fix_generate"):
-        fix = generate_fix(main_file, context, issue["report"], repo_path)
+        fix = generate_fix(main_file, main_code, issue["report"], repo_path, context)
 
     if fix == main_code:
         logger.warning(f"No code change generated for '{main_file}'")
@@ -410,12 +420,11 @@ def build_graph():
     graph = StateGraph(AgentState)
 
     graph.add_node("analysis", analysis_node)
-    # Node name is "fix_agent", NOT "fix" -- AgentState has a state field
-    # literally named "fix" (stores the generated fix code), and this version
-    # of LangGraph raises "'fix' is already being used as a state key" if a
-    # node name collides with a state channel name. This was a genuine,
-    # graph-compile-time-fatal bug, confirmed by running the test suite.
-    graph.add_node("fix_agent", fix_node)
+    # Node identifiers must not reuse state-field names (e.g. ``fix``), which
+    # LangGraph treats as channels when compiling the state graph -- this was
+    # a genuine, graph-compile-time-fatal bug ("'fix' is already being used
+    # as a state key"), confirmed by running the test suite.
+    graph.add_node("generate_fix", fix_node)
     graph.add_node("apply_patch", apply_patch_node)
     graph.add_node("test", test_node)
     graph.add_node("reflect", reflection_node)
@@ -423,25 +432,16 @@ def build_graph():
 
     graph.set_entry_point("analysis")
 
-    graph.add_edge("analysis", "fix_agent")
-
-    # fix_node has three early-return paths (max retries reached, unreadable
-    # file, no code change / syntax-invalid fix) that set an explicit "action"
-    # and must NOT reach apply_patch_node -- doing so would crash on missing
-    # state["current_file"]/state["fix"]. Only the "ready to patch" path
-    # (action=None) should proceed to apply_patch; every other action loops
-    # back to "fix_agent" (retry/next_issue) or ends the run (stop).
+    graph.add_edge("analysis", "generate_fix")
     graph.add_conditional_edges(
-        "fix_agent",
-        lambda s: s.get("action") or "apply",
+        "generate_fix",
+        _route_after_fix,
         {
-            "apply": "apply_patch",
-            "retry": "fix_agent",
-            "next_issue": "fix_agent",
-            "stop": "finalize",
-        }
+            "fix": "generate_fix",
+            "apply_patch": "apply_patch",
+            "finalize": "finalize",
+        },
     )
-
     graph.add_edge("apply_patch", "test")
     graph.add_edge("test", "reflect")
 
@@ -449,11 +449,11 @@ def build_graph():
         "reflect",
         lambda s: s.get("action", "stop"),
         {
-            "retry": "fix_agent",
-            "next_issue": "fix_agent",   # advance index, reset retry, loop back
+            "retry": "generate_fix",
+            "next_issue": "generate_fix",   # advance index, reset retry, loop back
             "done": "finalize",
             "stop": "finalize",
-            "next": "fix_agent"          # alias for next_issue (planner compatibility)
+            "next": "generate_fix"          # alias for next_issue (planner compatibility)
         }
     )
 

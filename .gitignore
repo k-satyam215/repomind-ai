@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.so
@@ -34,10 +34,8 @@ repomind_memory/
 repomind_repo_*/
 repomind_*/
 
-# Test / lint caches
+# Local test, lint, and agent work artifacts
 .pytest_cache/
-pytest-cache-files-*/
 .ruff_cache/
-
-# Work / scratch directory
+pytest-cache-files-*/
 work/

@@ -6,6 +6,7 @@ from pydantic import BaseModel, validator
 from src.agents.patch_apply_agent import apply_patch
 from src.agents.test_runner_agent import run_tests
 from src.core.logger import get_logger
+from src.core.security import managed_file_path, managed_path, managed_repo_path
 from src.mcp.registry import TOOLS
 from src.core.security import managed_file_path, managed_path, managed_repo_path
 from src.tools.file_tools import read_file

@@ -8,6 +8,7 @@ from pydantic import BaseModel, field_validator
 from src.agents.fix_generator import generate_fix, generate_fix_stream, generate_multi_file_fix
 from src.agents.parallel_processor import apply_approved_fixes, process_issues_parallel
 from src.core.logger import get_logger
+from src.core.security import managed_file_path, managed_repo_path
 from src.main import analyze_repository
 from src.observability.metrics import get_metrics
 from src.tools.diff_tools import generate_diff

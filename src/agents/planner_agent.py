@@ -8,10 +8,10 @@ logger = get_logger("RepoMind.Planner")
 
 # Planner only ever outputs a single word ("retry" / "stop") — the fast/cheap
 # model is more than sufficient for this binary decision.
-llm = ChatGroq(
-    model=GROQ_MODEL_FAST,
-    api_key=GROQ_API_KEY,
-    temperature=0
+llm = (
+    ChatGroq(model=GROQ_MODEL_FAST, api_key=GROQ_API_KEY, temperature=0)
+    if GROQ_API_KEY
+    else None
 )
 
 SYSTEM_PROMPT = """You are an autonomous AI software engineering agent.
@@ -32,6 +32,10 @@ def plan_next_step(reflection: str) -> str:
     Defaults to 'stop' on any ambiguity or failure — safe default.
     """
     logger.info("Planning next step after reflection")
+
+    if llm is None:
+        logger.warning("Groq is not configured; planner defaulting to stop")
+        return "stop"
 
     try:
         messages = [

@@ -15,17 +15,23 @@ from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.FixGenerator")
 
-llm = ChatGroq(
-    model=GROQ_MODEL_STRONG,
-    api_key=GROQ_API_KEY,
-    temperature=0
+# Do not construct provider clients during import when no credential exists.
+# This keeps API health checks and the test suite usable without a Groq secret.
+llm = (
+    ChatGroq(model=GROQ_MODEL_STRONG, api_key=GROQ_API_KEY, temperature=0)
+    if GROQ_API_KEY
+    else None
 )
 
-llm_streaming = ChatGroq(
-    model=GROQ_MODEL_STRONG,
-    api_key=GROQ_API_KEY,
-    temperature=0,
-    streaming=True
+llm_streaming = (
+    ChatGroq(
+        model=GROQ_MODEL_STRONG,
+        api_key=GROQ_API_KEY,
+        temperature=0,
+        streaming=True,
+    )
+    if GROQ_API_KEY
+    else None
 )
 
 _PY_VERSION = sys.version_info
@@ -210,6 +216,10 @@ def _self_heal(
         f"BROKEN CODE THAT FAILED:\n{broken_code[:6000]}"
     )
 
+    if llm is None:
+        logger.warning("Groq is not configured; self-heal skipped")
+        return broken_code, False
+
     try:
         res = llm.invoke([
             SystemMessage(content=SELF_HEAL_SYSTEM_PROMPT),
@@ -249,7 +259,13 @@ def _self_heal(
         return broken_code, False
 
 
-def _build_messages(file: str, code: str, bug: dict, repo_path: str = "") -> list:
+def _build_messages(
+    file: str,
+    code: str,
+    bug: dict,
+    repo_path: str = "",
+    supporting_context: str = "",
+) -> list:
     min_ver = _detect_min_python(code)
     prompt = (
         f"FILE: {file}\n"
@@ -257,12 +273,24 @@ def _build_messages(file: str, code: str, bug: dict, repo_path: str = "") -> lis
         f"BUG REPORT:\n{bug}\n\n"
         f"FULL FILE CODE:\n{code[:8000]}"
     )
+    if supporting_context:
+        prompt += (
+            "\n\nRELATED REPOSITORY CONTEXT (reference only; return ONLY the "
+            "complete fixed primary file):\n"
+            f"{supporting_context[:8000]}"
+        )
     return [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)]
 
 
 # ── Main fix functions ────────────────────────────────────────────────────────
 
-def generate_fix(file: str, code: str, bug: dict, repo_path: str = "") -> str:
+def generate_fix(
+    file: str,
+    code: str,
+    bug: dict,
+    repo_path: str = "",
+    supporting_context: str = "",
+) -> str:
     """
     Codex-style fix generation with full runtime verification + self-heal loop:
 
@@ -280,12 +308,16 @@ def generate_fix(file: str, code: str, bug: dict, repo_path: str = "") -> str:
         logger.warning(f"Empty code for '{file}'")
         return code
 
+    if llm is None:
+        logger.warning("Groq is not configured; returning the original code")
+        return code
+
     logger.info(
         f"Generating fix for '{file}' | Bug: {bug.get('bug', 'unknown')[:80]}"
     )
 
     try:
-        res = llm.invoke(_build_messages(file, code, bug, repo_path))
+        res = llm.invoke(_build_messages(file, code, bug, repo_path, supporting_context))
 
         if not res or not res.content:
             logger.warning(f"Empty LLM response for '{file}'")
@@ -336,6 +368,10 @@ def generate_fix_stream(file: str, code: str, bug: dict) -> Generator[str, None,
     if not code or not code.strip():
         return
 
+    if llm_streaming is None:
+        yield "\n# Fix generation unavailable: GROQ_API_KEY is not configured.\n"
+        return
+
     logger.info(f"Streaming fix for '{file}'")
 
     try:
@@ -357,6 +393,10 @@ def generate_multi_file_fix(
     Each generated fix is runtime-verified — broken fixes are excluded.
     """
     if not files_context:
+        return {}
+
+    if llm is None:
+        logger.warning("Groq is not configured; multi-file fix skipped")
         return {}
 
     logger.info(

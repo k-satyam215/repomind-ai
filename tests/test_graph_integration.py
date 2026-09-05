@@ -148,7 +148,7 @@ class _GraphMocks:
                 return test_result
             raise ValueError(f"Unexpected tool: {tool}")
 
-        def fake_generate_fix(file, context, report, repo_path):
+        def fake_generate_fix(file, code, report, repo_path, context=""):
             return next(self._fix_sequence)
 
         def fake_create_fix_pr(repo_url, repo_path, fix):

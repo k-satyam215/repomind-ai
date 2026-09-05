@@ -8,10 +8,10 @@ from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.RepoAnalyzer")
 
-llm = ChatGroq(
-    model=GROQ_MODEL_STRONG,
-    api_key=GROQ_API_KEY,
-    temperature=0
+llm = (
+    ChatGroq(model=GROQ_MODEL_STRONG, api_key=GROQ_API_KEY, temperature=0)
+    if GROQ_API_KEY
+    else None
 )
 
 SYSTEM_PROMPT = """You are a senior software architect.
@@ -29,6 +29,9 @@ Keep the response concise, structured, and under 300 words."""
 def analyze_repo_structure(files: List[str]) -> str:
     if not files:
         return "No source files found — analysis skipped."
+
+    if llm is None:
+        return "Architecture analysis unavailable: GROQ_API_KEY is not configured."
 
     structure = "\n".join(files[:80])
 
