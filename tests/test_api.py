@@ -142,3 +142,10 @@ class TestMetricsRoute:
         rate = res.json()["fix_success_rate_pct"]
         assert isinstance(rate, (int, float))
         assert 0.0 <= rate <= 100.0
+
+    def test_langsmith_uses_stable_tracing_home_url(self, monkeypatch):
+        monkeypatch.setattr("src.core.config.LANGSMITH_TRACING_ENABLED", True)
+        monkeypatch.setattr("src.api.routes.LANGSMITH_TRACING_ENABLED", True, raising=False)
+        res = client.get("/metrics")
+        assert res.status_code == 200
+        assert res.json()["integrations"]["langsmith"]["url"] == "https://smith.langchain.com/"

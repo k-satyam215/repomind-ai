@@ -411,10 +411,10 @@ def metrics():
             "langsmith": {
                 "enabled": LANGSMITH_TRACING_ENABLED,
                 "project": LANGSMITH_PROJECT if LANGSMITH_TRACING_ENABLED else None,
-                "url": (
-                    f"https://smith.langchain.com/projects/{LANGSMITH_PROJECT}"
-                    if LANGSMITH_TRACING_ENABLED else None
-                ),
+                # Project URLs include a workspace-specific path and can drift as
+                # LangSmith evolves. Link to the stable tracing home instead;
+                # the user can then select the named project in their workspace.
+                "url": "https://smith.langchain.com/" if LANGSMITH_TRACING_ENABLED else None,
             },
         }
         return data

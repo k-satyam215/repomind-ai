@@ -721,15 +721,15 @@ set <code>LANGSMITH_API_KEY</code> to enable LLM tracing</span></div>""",
                     else:
                         link = (
                             f"<a href='{ls_url}' target='_blank' "
-                            f"style='color:#818cf8'>View traces →</a>"
+                            f"style='color:#818cf8'>Open LangSmith tracing →</a>"
                             if ls_url else ""
                         )
                         st.markdown(f"""
 <div style='padding:14px;border-radius:12px;
 border:1px solid #818cf8;background:rgba(129,140,248,.07)'>
 <b>🟣 LangSmith</b><br>
-<span style='color:#a5b4fc;font-size:.85rem'>✔ Tracing enabled —
-Project: <b>{ls_project}</b><br>{link}</span></div>""",
+<span style='color:#a5b4fc;font-size:.85rem'>✔ Tracing configured —
+Project: <b>{ls_project}</b>. Select this project in LangSmith to view traces.<br>{link}</span></div>""",
                         unsafe_allow_html=True)
 
             with st.expander("Raw JSON"):
