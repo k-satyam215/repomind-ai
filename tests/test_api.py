@@ -50,6 +50,31 @@ class TestAnalyzeRoute:
         assert data["analysis"] == "FastAPI project"
         assert data["issues"] == []
 
+    @patch("src.api.routes.analyze_repository")
+    def test_private_repository_token_is_forwarded(self, mock_analyze):
+        """A masked UI token reaches only the active analyzer call."""
+        mock_analyze.return_value = {
+            "analysis": "Private repository",
+            "issues": [],
+            "repo_path": "/tmp/repomind_private",
+            "dependency_map": {},
+            "repo_url": "https://github.com/owner/private-repo",
+        }
+
+        response = client.post(
+            "/analyze",
+            json={
+                "repo_url": "https://github.com/owner/private-repo",
+                "github_token": "github_pat_test_only",
+            },
+        )
+
+        assert response.status_code == 200
+        mock_analyze.assert_called_once_with(
+            "https://github.com/owner/private-repo",
+            github_token="github_pat_test_only",
+        )
+
 
 class TestDiffRoute:
 

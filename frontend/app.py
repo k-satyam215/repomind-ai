@@ -58,7 +58,7 @@ label, [data-testid="stWidgetLabel"] p { color: #dbe7f5 !important;
     padding:16px; font-family:monospace; font-size:.82rem; line-height:1.6;
     max-height:400px; overflow-y:auto; color:#a5f3fc; }
 hr { border: 0; border-top: 1px solid #202c3e; }
-.hero { position:relative; overflow:hidden; text-align:center; padding: 34px 38px 30px;
+.hero { position:relative; overflow:hidden; text-align:center; padding: 28px 38px 26px;
   border: 1px solid rgba(91,105,148,.24); border-radius: 24px;
   background: linear-gradient(135deg, rgba(19,10,40,.54), rgba(5,8,15,.4) 42%, rgba(7,23,49,.58));
   box-shadow: 0 28px 80px rgba(0,0,0,.32); margin: 0 0 28px; }
@@ -66,9 +66,9 @@ hr { border: 0; border-top: 1px solid #202c3e; }
   background:radial-gradient(circle, rgba(139,92,246,.22), transparent 67%); pointer-events:none; }
 .hero::after { content:""; position:absolute; width:460px; height:300px; right:-190px; bottom:-150px;
   background:radial-gradient(circle, rgba(34,211,238,.18), transparent 67%); pointer-events:none; }
-.brain-mark { position:relative; z-index:1; width:150px; height:150px; margin:0 auto 8px;
+.brain-mark { position:relative; z-index:1; width:136px; height:136px; margin:0 auto 4px;
   display:grid; place-items:center; }
-.brain-art { width:144px; height:144px; object-fit:contain; filter:drop-shadow(0 0 22px rgba(34,211,238,.34));
+.brain-art { width:130px; height:130px; object-fit:contain; filter:drop-shadow(0 0 22px rgba(34,211,238,.34));
   animation: brain-float 5s ease-in-out infinite; }
 .brain-fallback { width:92px; height:92px; display:grid; place-items:center; border:1px solid #60a5fa;
   border-radius:50%; color:#67e8f9; font-size:3rem; background:rgba(14,165,233,.08); }
@@ -76,11 +76,11 @@ hr { border: 0; border-top: 1px solid #202c3e; }
 .hero-kicker { position:relative; z-index:1; color:#a5b4fc; font-size:.72rem; font-weight:800;
   letter-spacing:.22em; text-transform:uppercase; }
 .hero-kicker b { color:#60a5fa; font-weight:800; }
-.hero-copy { position:relative; z-index:1; color:#cbd5e1; max-width:720px; font-size:1.08rem;
-  line-height:1.6; margin:18px auto 0; }
+.hero-copy { position:relative; z-index:1; color:#cbd5e1; max-width:620px; font-size:1.08rem;
+  line-height:1.55; margin:14px auto 0; }
 .hero h1 { position:relative; z-index:1; }
 .trust-chip { display:inline-block; color:#b6f5d8; border:1px solid rgba(52,211,153,.38); border-radius:999px;
-  background:rgba(16,185,129,.08); padding:5px 11px; font-size:.76rem; margin:20px 6px 0 0; }
+  background:rgba(16,185,129,.08); padding:5px 11px; font-size:.76rem; margin:14px 6px 0 0; }
 [data-testid="stTabs"] { margin-bottom: 14px; }
 [data-testid="stTabs"] button { color:#93a5bd; font-weight:700; border-radius: 8px 8px 0 0; padding: 0 2px; }
 [data-testid="stTabs"] button[aria-selected="true"] { color: #7dd3fc; border-bottom-color: #38bdf8; }
@@ -113,7 +113,7 @@ st.markdown("""
   </div>
   <div class="hero-kicker">R E P O M I N D &nbsp; <b>● v1.6</b></div>
   <h1>GitHub repository analysis,<br><em>code review &amp; safe fixes.</em></h1>
-  <p class="hero-copy">From a GitHub URL to review-ready, sandbox-tested fixes.</p>
+  <p class="hero-copy">Find issues, review the fix, and stay in control—before code changes.</p>
   <span class="trust-chip">● Sandbox-tested</span>
   <span class="trust-chip">● Secret-safe execution</span>
   <span class="trust-chip">● Approval required</span>
