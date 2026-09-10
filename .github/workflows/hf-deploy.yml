@@ -21,9 +21,9 @@ jobs:
           git config --global user.email "ci@repomind.ai"
           git config --global user.name "RepoMind CI"
 
-      # HF Spaces rejects regular Git blobs for binary assets. Git Xet is the
-      # official HF Git extension; its clean filter uploads the brain image to
-      # Xet storage while the commit contains a lightweight pointer.
+      # Git Xet provides Hugging Face's Git LFS transfer agent for binary
+      # assets. The explicit LFS tracking rule below creates the pointer file
+      # that the agent routes to Xet storage.
       - name: Install Git Xet for Hugging Face binary assets
         run: |
           curl --proto '=https' --tlsv1.2 -sSf \
@@ -44,6 +44,11 @@ jobs:
           # Demo media is not needed by the Space. Product artwork is retained
           # and routed to HF Xet by the Git filter configured above.
           rm -rf assets/demo.mp4 assets/demo.gif assets/architecture.png uv.lock
+
+          # An orphan branch does not inherit the Space's .gitattributes.
+          # Track this PNG explicitly so it is committed as an LFS/Xet pointer,
+          # never as a binary Git blob rejected by Hugging Face.
+          git lfs track "assets/neural-brain-hero.png"
 
           git add .
           git commit -m "deploy: RepoMind AI $(git describe --tags --abbrev=0 2>/dev/null || echo latest)"
