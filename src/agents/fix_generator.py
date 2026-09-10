@@ -142,6 +142,21 @@ def _verify_syntax(code: str) -> tuple[bool, str]:
         return False, f"SyntaxError at line {e.lineno}: {e.msg}"
 
 
+# Code from an untrusted repo (or an LLM fix derived from it) must never run
+# with the process's real environment -- GROQ_API_KEY / GITHUB_TOKEN live
+# there. Mirrors the allowlist already used in test_runner_agent.py.
+_SAFE_ENV_KEYS = ("PATH", "SYSTEMROOT", "WINDIR", "HOME", "TMP", "TEMP", "PYTHONIOENCODING")
+
+
+def _build_safe_subprocess_env(repo_path: str = "") -> dict:
+    env = {key: os.environ[key] for key in _SAFE_ENV_KEYS if key in os.environ}
+    env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if repo_path and os.path.exists(repo_path):
+        env["PYTHONPATH"] = repo_path + os.pathsep + env.get("PYTHONPATH", "")
+    return env
+
+
 def _run_in_subprocess(code: str, repo_path: str = "") -> tuple[bool, str]:
     """
     Actually execute the fixed file in a subprocess to catch ALL runtime errors:
@@ -149,6 +164,11 @@ def _run_in_subprocess(code: str, repo_path: str = "") -> tuple[bool, str]:
     - AttributeError: renamed class/method in newer lib version
     - TypeError: wrong function signature in new version
     - Any module-level crash on import
+
+    Runs with a minimal, secret-free environment (see _build_safe_subprocess_env)
+    since this code originates from an untrusted repository and/or an LLM fix
+    derived from it -- it must never have access to GROQ_API_KEY, GITHUB_TOKEN,
+    or any other real-environment secret.
 
     Returns (success, error_output).
     """
@@ -160,9 +180,7 @@ def _run_in_subprocess(code: str, repo_path: str = "") -> tuple[bool, str]:
             f.write(code)
             tmp_path = f.name
 
-        env = os.environ.copy()
-        if repo_path and os.path.exists(repo_path):
-            env["PYTHONPATH"] = repo_path + os.pathsep + env.get("PYTHONPATH", "")
+        env = _build_safe_subprocess_env(repo_path)
 
         result = subprocess.run(
             [sys.executable, tmp_path],
@@ -237,6 +255,19 @@ def _self_heal(
         if not syntax_ok:
             logger.warning(f"Self-heal {attempt}: syntax error: {syntax_err}")
             return broken_code, False
+
+        # Runtime execution is opt-in (RUN_RUNTIME_VALIDATION) -- self-heal must
+        # respect that flag exactly like generate_fix() does. Previously this
+        # unconditionally executed LLM-generated code derived from an untrusted
+        # repo in a subprocess even when the operator had explicitly disabled
+        # runtime execution, which defeated the opt-out. When the flag is off,
+        # a passing syntax check is the full guarantee for self-heal.
+        if not RUN_RUNTIME_VALIDATION:
+            logger.info(
+                f"Self-heal {attempt}: syntax verified (runtime execution disabled — "
+                f"RUN_RUNTIME_VALIDATION=false)"
+            )
+            return healed, True
 
         # Runtime check
         runtime_ok, new_error = _run_in_subprocess(healed, repo_path)
@@ -439,7 +470,9 @@ def generate_multi_file_fix(
                 )
                 continue
 
-            runtime_ok, runtime_err = _run_in_subprocess(fixed_code)
+            runtime_ok, runtime_err = (True, "")
+            if RUN_RUNTIME_VALIDATION:
+                runtime_ok, runtime_err = _run_in_subprocess(fixed_code)
             if not runtime_ok:
                 logger.warning(
                     f"Multi-file fix: runtime error in '{fname}': {runtime_err[:100]}"

@@ -74,23 +74,22 @@ def health_detailed():
         checks["memory_dir"] = f"error: {e}"
 
     # Check: tmp space available (need at least 500MB for cloning repos)
+    # tempfile.gettempdir() resolves to the correct OS temp dir on both
+    # Windows (e.g. C:\Users\...\AppData\Local\Temp) and Linux/Docker (/tmp) --
+    # a hardcoded "/tmp" silently misreports on Windows.
     try:
-        total, used, free = shutil.disk_usage("/tmp")
+        import tempfile as _tempfile
+        total, used, free = shutil.disk_usage(_tempfile.gettempdir())
         free_mb = free // (1024 * 1024)
         checks["tmp_space_mb"] = free_mb
         checks["tmp_space"] = "ok" if free_mb > 500 else "low"
     except Exception:
         checks["tmp_space"] = "unknown"
 
-    overall = "ok" if all(
-        v in ("ok", checks.get("tmp_space_mb", "ok"))
-        for k, v in checks.items()
-        if k != "tmp_space_mb"
-    ) else "degraded"
-
-    # Groq key missing = not degraded, just warn (can still run with env-injected key)
-    if checks["groq_api_key"] == "missing":
-        overall = "degraded"
+    # Overall status is "ok" only if every status-bearing check reports "ok".
+    # tmp_space_mb is a raw number (not a status string) so it's excluded here.
+    status_checks = {k: v for k, v in checks.items() if k != "tmp_space_mb"}
+    overall = "ok" if all(v == "ok" for v in status_checks.values()) else "degraded"
 
     status_code = 200 if overall == "ok" else 207
     return JSONResponse(
