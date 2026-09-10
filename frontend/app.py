@@ -59,8 +59,12 @@ st.markdown("""
 <div class="hero">
   <div class="hero-kicker">Autonomous engineering, with human control</div>
   <h1>🤖 RepoMind AI</h1>
-  <p class="hero-copy">Turn a GitHub repository into a clear, reviewable repair plan. RepoMind detects issues, generates minimal diffs, tests in a sandbox, and waits for your approval before applying a change.</p>
-  <span class="trust-chip">✓ Sandbox-first</span><span class="trust-chip">✓ Secret-safe execution</span><span class="trust-chip">✓ Approval required</span>
+  <p class="hero-copy">Turn a GitHub repository into a clear, reviewable repair plan.
+  RepoMind detects issues, generates minimal diffs, tests in a sandbox, and waits
+  for your approval before applying a change.</p>
+  <span class="trust-chip">✓ Sandbox-first</span>
+  <span class="trust-chip">✓ Secret-safe execution</span>
+  <span class="trust-chip">✓ Approval required</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -90,7 +94,10 @@ with tab_analyze:
     github_token = st.text_input(
         "GitHub personal access token (optional)", type="password", key="github_token_standard",
         placeholder="github_pat_...",
-        help="Only used for this analysis to clone a private repository. It is never displayed, logged, returned, or placed in the shared cache."
+        help=(
+            "Only used for this analysis to clone a private repository. It is never "
+            "displayed, logged, returned, or placed in the shared cache."
+        )
     )
     col1, col2 = st.columns([1, 5])
     with col1:
@@ -452,7 +459,10 @@ with tab_parallel:
     p_github_token = st.text_input(
         "GitHub personal access token (optional)", type="password", key="github_token_parallel",
         placeholder="github_pat_...",
-        help="Use a fine-grained, read-only token for private repositories. Token-authorised runs bypass the shared cache."
+        help=(
+            "Use a fine-grained, read-only token for private repositories. "
+            "Token-authorised runs bypass the shared cache."
+        )
     )
     p_concurrency = st.slider("Max concurrent LLM calls", 1, 5, 3,
                               help="Higher = faster but more likely to hit rate limits")
