@@ -8,9 +8,12 @@ import streamlit as st
 
 BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
 ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets"
-BRAIN_HERO_SRC = "data:image/png;base64," + base64.b64encode(
-    (ASSETS_DIR / "neural-brain-hero.png").read_bytes()
-).decode("ascii")
+BRAIN_HERO_PATH = ASSETS_DIR / "neural-brain-hero.png"
+BRAIN_HERO_SRC = ""
+if BRAIN_HERO_PATH.is_file():
+    BRAIN_HERO_SRC = "data:image/png;base64," + base64.b64encode(
+        BRAIN_HERO_PATH.read_bytes()
+    ).decode("ascii")
 
 st.set_page_config(page_title="RepoMind AI", page_icon="🤖", layout="wide")
 
@@ -67,6 +70,8 @@ hr { border: 0; border-top: 1px solid #202c3e; }
   display:grid; place-items:center; }
 .brain-art { width:144px; height:144px; object-fit:contain; filter:drop-shadow(0 0 22px rgba(34,211,238,.34));
   animation: brain-float 5s ease-in-out infinite; }
+.brain-fallback { width:92px; height:92px; display:grid; place-items:center; border:1px solid #60a5fa;
+  border-radius:50%; color:#67e8f9; font-size:3rem; background:rgba(14,165,233,.08); }
 @keyframes brain-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
 .hero-kicker { position:relative; z-index:1; color:#a5b4fc; font-size:.72rem; font-weight:800;
   letter-spacing:.22em; text-transform:uppercase; }
@@ -95,10 +100,16 @@ def sev_badge(sev: str) -> str:
 
 
 # ─── Header ─────────────────────────────────────────────────────────────────
+brain_visual = (
+    f'<img class="brain-art" src="{BRAIN_HERO_SRC}" alt="Neural brain" />'
+    if BRAIN_HERO_SRC
+    else '<div class="brain-fallback" aria-label="Neural brain">◉</div>'
+)
+
 st.markdown("""
 <div class="hero">
   <div class="brain-mark" aria-hidden="true">
-    <img class="brain-art" src="__BRAIN_HERO_SRC__" alt="Neural brain" />
+    __BRAIN_VISUAL__
   </div>
   <div class="hero-kicker">R E P O M I N D &nbsp; <b>● v1.6</b></div>
   <h1>GitHub repository analysis,<br><em>code review &amp; safe fixes.</em></h1>
@@ -107,7 +118,7 @@ st.markdown("""
   <span class="trust-chip">● Secret-safe execution</span>
   <span class="trust-chip">● Approval required</span>
 </div>
-""".replace("__BRAIN_HERO_SRC__", BRAIN_HERO_SRC), unsafe_allow_html=True)
+""".replace("__BRAIN_VISUAL__", brain_visual), unsafe_allow_html=True)
 
 tab_analyze, tab_stream, tab_parallel, tab_metrics = st.tabs([
     "🔍 Analyze", "⚡ Streaming Fix", "🚀 Parallel Mode", "📊 Observability"

@@ -18,4 +18,7 @@ logs/
 tests/
 .github/
 *.md
-assets/
+# Exclude existing demo assets, but retain the production hero artwork used by
+# the Streamlit app in the Hugging Face Docker image.
+assets/*
+!assets/neural-brain-hero.png
