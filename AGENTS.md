@@ -43,6 +43,10 @@ Advance to next bug
 The agent processes **all detected issues**, not just the first. Each issue has its own
 independent retry loop with shared observability.
 
+The internal development/benchmark graph still contains an optional GitHub PR
+integration for explicitly configured environments. It is not exposed by the hosted
+Streamlit workflow, which remains review-first and does not push code.
+
 ---
 
 ## Agent graph (`src/graph/agent_graph.py`)

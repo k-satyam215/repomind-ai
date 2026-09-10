@@ -259,10 +259,13 @@ repomind-ai/
 │   ├── agents/
 │   │   ├── bug_detector.py        LLM bug detection with confidence + severity scoring
 │   │   ├── fix_generator.py       Full-file fix generation with context injection
+│   │   ├── multi_file_patch_agent.py Multi-file fix orchestration
+│   │   ├── parallel_processor.py  Bounded-concurrency issue processing
 │   │   ├── patch_apply_agent.py   Atomic write + .bak backup + rollback
-│   │   ├── test_runner_agent.py   pytest via subprocess
+│   │   ├── planner_agent.py       Retry / stop decision
 │   │   ├── reflection_agent.py    Failure analysis
-│   │   └── planner_agent.py       retry / stop decision
+│   │   ├── repo_analyzer.py       Repository structure and dependency analysis
+│   │   └── test_runner_agent.py   Pytest via subprocess
 │   ├── graph/
 │   │   └── agent_graph.py         LangGraph state machine — multi-issue loop
 │   ├── mcp/
@@ -282,22 +285,29 @@ repomind-ai/
 │   │   ├── file_tools.py          Safe file read
 │   │   └── sandbox_patch.py       Isolated sandbox copy
 │   ├── integrations/
-│   │   └── github_pr_agent.py     PR creation — no duplicates, no force on main
+│   │   └── github_pr_agent.py     Internal PR integration; not used by hosted UI
 │   ├── api/
-│   │   └── routes.py              /analyze /fix /diff /metrics
+│   │   └── routes.py              Analyze, stream, diff, approval, multi-file and metrics routes
 │   ├── core/
-│   │   ├── config.py              Env validation
-│   │   └── logger.py              Structured logging
+│   │   ├── cache.py               Redis-backed analysis cache
+│   │   ├── config.py              Environment configuration
+│   │   ├── logger.py              Structured logging
+│   │   ├── prompt_guard.py        Untrusted repository-code prompt boundary
+│   │   └── security.py            Token redaction and managed path protection
 │   └── utils/
 │       ├── repo_parser.py         Recursive file walker
 │       └── repo_filter.py         Python-only path filter
 ├── tests/
-│   ├── test_tools.py              24 unit tests
-│   ├── test_agents.py             17 unit tests
-│   ├── test_api.py                12 integration tests
-│   └── test_observability.py      17 unit tests
+│   ├── test_agent_graph.py        Graph construction and routing tests
+│   ├── test_agents.py             Agent unit tests
+│   ├── test_api.py                FastAPI route tests
+│   ├── test_graph_integration.py  End-to-end graph integration tests
+│   ├── test_observability.py      Metrics and timing tests
+│   ├── test_prompt_guard.py       Prompt-injection boundary tests
+│   ├── test_security.py           Token and path-safety tests
+│   └── test_tools.py              AST, diff, file and sandbox tests
 ├── benchmark.py                   Reproducible benchmark runner
-├── docker-compose.yml             3-service deployment
+├── docker-compose.yml             4-service deployment (Redis, backend, MCP, frontend)
 ├── Dockerfile
 ├── pyproject.toml
 ├── setup.sh
