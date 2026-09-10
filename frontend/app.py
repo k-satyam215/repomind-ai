@@ -1,10 +1,16 @@
+import base64
 import json
 import os
+from pathlib import Path
 
 import requests
 import streamlit as st
 
 BACKEND = os.getenv("BACKEND_URL", "http://localhost:8000")
+ASSETS_DIR = Path(__file__).resolve().parents[1] / "assets"
+BRAIN_HERO_SRC = "data:image/png;base64," + base64.b64encode(
+    (ASSETS_DIR / "neural-brain-hero.png").read_bytes()
+).decode("ascii")
 
 st.set_page_config(page_title="RepoMind AI", page_icon="🤖", layout="wide")
 
@@ -57,10 +63,11 @@ hr { border: 0; border-top: 1px solid #202c3e; }
   background:radial-gradient(circle, rgba(139,92,246,.22), transparent 67%); pointer-events:none; }
 .hero::after { content:""; position:absolute; width:460px; height:300px; right:-190px; bottom:-150px;
   background:radial-gradient(circle, rgba(34,211,238,.18), transparent 67%); pointer-events:none; }
-.brain-mark { position:relative; z-index:1; width:88px; height:88px; margin:0 auto 18px; padding:10px;
-  border:1px solid rgba(103,232,249,.75); border-radius:50%; background:rgba(6,11,22,.86);
-  box-shadow:0 0 0 5px rgba(139,92,246,.12), 0 0 42px rgba(34,211,238,.18); }
-.brain-mark svg { width:100%; height:100%; filter:drop-shadow(0 0 8px rgba(129,140,248,.6)); }
+.brain-mark { position:relative; z-index:1; width:150px; height:150px; margin:0 auto 8px;
+  display:grid; place-items:center; }
+.brain-art { width:144px; height:144px; object-fit:contain; filter:drop-shadow(0 0 22px rgba(34,211,238,.34));
+  animation: brain-float 5s ease-in-out infinite; }
+@keyframes brain-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
 .hero-kicker { position:relative; z-index:1; color:#a5b4fc; font-size:.72rem; font-weight:800;
   letter-spacing:.22em; text-transform:uppercase; }
 .hero-kicker b { color:#60a5fa; font-weight:800; }
@@ -76,7 +83,8 @@ hr { border: 0; border-top: 1px solid #202c3e; }
   background:#0c111b !important; }
 .section-note { color:#8fa3bc; font-size:.94rem; margin:0 0 1.2rem; }
 @media (max-width: 700px) { .block-container { padding:1rem 1rem 3rem; }
-  .hero { padding:30px 20px 26px; } .brain-mark { width:76px; height:76px; } }
+  .hero { padding:30px 20px 26px; } .brain-mark { width:114px; height:114px; }
+  .brain-art { width:108px; height:108px; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -90,33 +98,16 @@ def sev_badge(sev: str) -> str:
 st.markdown("""
 <div class="hero">
   <div class="brain-mark" aria-hidden="true">
-    <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="brain-gradient" x1="12" y1="18" x2="85" y2="80">
-          <stop stop-color="#A78BFA"/><stop offset="1" stop-color="#22D3EE"/>
-        </linearGradient>
-      </defs>
-      <path d="M47 18C38 12 26 16 24 27C15 28 11 39 17 47C11 56 16 68 27 69C30 79 40 83 48 77"
-        stroke="url(#brain-gradient)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M49 18C58 12 70 16 72 27C81 28 85 39 79 47C85 56 80 68 69 69C66 79 56 83 48 77"
-        stroke="url(#brain-gradient)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M48 21V74M25 36C33 35 35 42 42 41M72 36C64 35 62 42 55 41"
-        stroke="url(#brain-gradient)" stroke-width="3" stroke-linecap="round"/>
-      <path d="M24 57C33 56 35 64 43 61M72 57C63 56 61 64 53 61"
-        stroke="url(#brain-gradient)" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="34" cy="31" r="3" fill="#C4B5FD"/><circle cx="62" cy="31" r="3" fill="#67E8F9"/>
-      <circle cx="37" cy="54" r="3" fill="#C4B5FD"/><circle cx="59" cy="54" r="3" fill="#67E8F9"/>
-    </svg>
+    <img class="brain-art" src="__BRAIN_HERO_SRC__" alt="Neural brain" />
   </div>
   <div class="hero-kicker">R E P O M I N D &nbsp; <b>● v1.6</b></div>
   <h1>GitHub repository analysis,<br><em>code review &amp; safe fixes.</em></h1>
-  <p class="hero-copy">Understand repositories faster with context-aware AI. From a URL to
-  architecture, security findings, and review-ready, sandbox-tested patches.</p>
+  <p class="hero-copy">From a GitHub URL to review-ready, sandbox-tested fixes.</p>
   <span class="trust-chip">● Sandbox-tested</span>
   <span class="trust-chip">● Secret-safe execution</span>
   <span class="trust-chip">● Approval required</span>
 </div>
-""", unsafe_allow_html=True)
+""".replace("__BRAIN_HERO_SRC__", BRAIN_HERO_SRC), unsafe_allow_html=True)
 
 tab_analyze, tab_stream, tab_parallel, tab_metrics = st.tabs([
     "🔍 Analyze", "⚡ Streaming Fix", "🚀 Parallel Mode", "📊 Observability"
