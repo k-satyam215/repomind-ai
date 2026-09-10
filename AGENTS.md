@@ -9,8 +9,10 @@
 
 ## What the agent does
 
-RepoMind is a **fully autonomous software engineering agent**. Given a public GitHub Python
-repository URL, it runs the following loop without human intervention:
+RepoMind has an autonomous research/benchmark graph and a review-first hosted workflow.
+The hosted workflow analyses a public GitHub Python repository, or an authorised private
+repository with a fine-grained read-only token, then presents review-ready diff previews.
+It does not push commits or create GitHub pull requests.
 
 ```
 Clone repo
@@ -31,7 +33,7 @@ Run pytest in sandbox
     ↓
 On failure: reflect → plan → retry (up to 3 cycles)
     ↓
-On success: commit sandbox → original, open GitHub PR
+On success: show validated diff → wait for explicit user approval
     ↓
 Record metrics
     ↓
@@ -160,12 +162,13 @@ Live at `GET /metrics` on the backend.
 
 ## Sandbox design
 
-**The original cloned repo is NEVER modified until all tests pass.**
+**The original cloned repository is never modified by the hosted workflow.**
 
 1. `create_sandbox_copy(repo_path)` — `shutil.copytree` excluding `.git`
 2. All patches applied to sandbox
 3. pytest runs on the sandbox with RepoMind credentials removed from its environment
-4. On success: `commit_sandbox_changes(sandbox, original)` promotes only changed source files
+4. The hosted UI shows a diff preview and applies changes only after explicit approval
+   to the temporary analysis workspace; it does not commit, push or open a PR
 5. On failure or exception: sandbox deleted in `reflect` node's `finally` block
 
 This guarantees zero artifacts from failed fix attempts. The local executor is an
@@ -188,8 +191,8 @@ POST /fix/multi        → multi-file fix with per-file diffs for preview
 POST /analyze/parallel → detect + fix all issues in parallel, return previews
 ```
 
-The autonomous graph mode (via `benchmark.py` or direct `build_graph().invoke(...)`) runs
-without human confirmation.
+The internal graph is useful for development and benchmark experiments. The public hosted
+experience uses the human-approval flow described above.
 
 ---
 
@@ -241,5 +244,6 @@ python benchmark.py --repo https://github.com/owner/repo
 - Maximum `MAX_RETRIES` (default 3) retry cycles per bug before moving to next issue.
 - `TEST_TIMEOUT` (default 300s) — pytest timeout per run.
 - Bug detections with `confidence < 0.6` are discarded before reaching the fix stage.
-- PR creation requires `GITHUB_TOKEN` env var — optional, agent proceeds without it.
-- The agent never force-pushes to `main` — creates a new branch for every PR.
+- A fine-grained `GITHUB_TOKEN` is optional for private-repository cloning; use only
+  repository contents read-only access and revoke short-lived test tokens after use.
+- Token-authorised analyses bypass the shared cache and redact the token from errors.

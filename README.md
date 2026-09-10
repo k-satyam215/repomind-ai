@@ -165,15 +165,12 @@ pytest tests/ -v
 ```
 
 ```
-tests/test_tools.py          24 passed  ✅  AST, diff, file I/O, dependency graph, sandbox
-tests/test_agents.py         17 passed  ✅  fix gen, bug detect, patch apply, test runner
-tests/test_api.py            12 passed  ✅  /analyze /fix /diff /metrics endpoints
-tests/test_observability.py  17 passed  ✅  metrics recording, aggregation, timed_stage
-
-70 passed — 0 warnings ✅
+138 passed (latest local verification)
 ```
 
-All LLM calls are mocked — no API key needed to run the test suite.
+The suite covers agents, graph integration, API routes, observability, prompt safety,
+token handling and sandbox tools. LLM and Git calls are mocked where appropriate so
+unit tests are fast and repeatable.
 
 ---
 
@@ -338,7 +335,7 @@ See [AGENTS.md](AGENTS.md) to understand how the agent graph works before making
 
 ```bash
 git checkout -b feature/your-feature
-pytest tests/ -v        # all 70 tests must pass
+pytest tests/ -v        # latest verified suite: 138 passed
 git push origin feature/your-feature
 # open a Pull Request
 ```
