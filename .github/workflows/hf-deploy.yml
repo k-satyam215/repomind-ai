@@ -21,14 +21,28 @@ jobs:
           git config --global user.email "ci@repomind.ai"
           git config --global user.name "RepoMind CI"
 
-      - name: Push to HuggingFace Spaces (exclude binary/media files)
+      # HF Spaces rejects regular Git blobs for binary assets. Git Xet is the
+      # official HF Git extension; its clean filter uploads the brain image to
+      # Xet storage while the commit contains a lightweight pointer.
+      - name: Install Git Xet for Hugging Face binary assets
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf \
+            https://raw.githubusercontent.com/huggingface/xet-core/refs/heads/main/git_xet/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.local/bin:$PATH"
+          git lfs install
+          git xet install
+          git xet --version
+
+      - name: Push to HuggingFace Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
         run: |
           git checkout --orphan hf-deploy-branch
 
-          # Remove all binary/media files HF rejects
+          # Demo media is not needed by the Space. Product artwork is retained
+          # and routed to HF Xet by the Git filter configured above.
           rm -rf assets/demo.mp4 assets/demo.gif assets/architecture.png uv.lock
 
           git add .
