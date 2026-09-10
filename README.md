@@ -165,7 +165,7 @@ pytest tests/ -v
 ```
 
 ```
-138 passed (latest local verification)
+140 passed (latest local verification)
 ```
 
 The suite covers agents, graph integration, API routes, observability, prompt safety,
@@ -345,7 +345,7 @@ See [AGENTS.md](AGENTS.md) to understand how the agent graph works before making
 
 ```bash
 git checkout -b feature/your-feature
-pytest tests/ -v        # latest verified suite: 138 passed
+pytest tests/ -v        # latest verified suite: 140 passed
 git push origin feature/your-feature
 # open a Pull Request
 ```
