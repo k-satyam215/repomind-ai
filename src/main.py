@@ -9,6 +9,7 @@ from src.agents.repo_analyzer import analyze_repo_structure
 from src.core.cache import cache_get, cache_set
 from src.core.config import MAX_ANALYSIS_FILES, REPO_WORKSPACE_ROOT
 from src.core.logger import get_logger
+from src.core.security import build_authenticated_clone_url, redact_token, strip_token_from_git_config
 from src.tools.dependency_graph import build_dependency_map
 from src.tools.file_prioritizer import prioritize_files
 from src.tools.file_tools import read_file
@@ -18,12 +19,21 @@ from src.utils.repo_parser import get_repo_structure
 logger = get_logger("RepoMind.Main")
 
 
-def analyze_repository(repo_url: str, force_refresh: bool = False) -> dict:
+def analyze_repository(repo_url: str, force_refresh: bool = False, github_token: str | None = None) -> dict:
     """
     Clone a GitHub repo, analyze its architecture, and detect bugs.
 
     Redis cache: if result is already cached and force_refresh=False,
     returns cached result immediately (skips clone + LLM calls).
+
+    Private repositories: pass `github_token` (a GitHub PAT with repo read
+    access, or falls back to the GITHUB_TOKEN env var if not given) to clone
+    a private repo. The token is embedded in the clone URL ONLY for the
+    `git clone` subprocess call -- it is never logged, never included in the
+    cached/returned result, and is stripped from the clone's .git/config
+    immediately after cloning succeeds. Any git error is scrubbed of the
+    token before it's logged or surfaced to the caller, since git's own
+    exceptions embed the full command line (including the authenticated URL).
 
     Returns:
         {
@@ -40,12 +50,17 @@ def analyze_repository(repo_url: str, force_refresh: bool = False) -> dict:
         cached = cache_get(repo_url)
         if cached:
             return cached
+
+    github_token = github_token or os.getenv("GITHUB_TOKEN")
+    clone_url = build_authenticated_clone_url(repo_url, github_token)
+
     os.makedirs(REPO_WORKSPACE_ROOT, mode=0o700, exist_ok=True)
     temp_dir = tempfile.mkdtemp(prefix="repo_", dir=REPO_WORKSPACE_ROOT)
     logger.info(f"Cloning: {repo_url} → {temp_dir}")
 
     try:
-        git.Repo.clone_from(repo_url, temp_dir)
+        git.Repo.clone_from(clone_url, temp_dir)
+        strip_token_from_git_config(temp_dir)
         logger.info("Clone complete")
 
         # 1. Parse + filter
@@ -111,14 +126,16 @@ def analyze_repository(repo_url: str, force_refresh: bool = False) -> dict:
         return result
 
     except git.exc.GitCommandError as e:
-        logger.error(f"Git clone failed: {e}")
+        error_msg = redact_token(str(e), github_token)
+        logger.error(f"Git clone failed: {error_msg}")
         shutil.rmtree(temp_dir, ignore_errors=True)
-        return _empty_result(None, repo_url, f"Git clone failed: {e}")
+        return _empty_result(None, repo_url, f"Git clone failed: {error_msg}")
 
     except Exception as e:
-        logger.error(f"Unexpected error during analysis: {e}")
+        error_msg = redact_token(str(e), github_token)
+        logger.error(f"Unexpected error during analysis: {error_msg}")
         shutil.rmtree(temp_dir, ignore_errors=True)
-        return _empty_result(None, repo_url, f"Error: {e}")
+        return _empty_result(None, repo_url, f"Error: {error_msg}")
 
 
 def _empty_result(repo_path, repo_url, message) -> dict:

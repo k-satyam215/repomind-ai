@@ -27,6 +27,11 @@ def _repo_file(repo_path: str, file: str) -> str:
 
 class RepoRequest(BaseModel):
     repo_url: str
+    # Optional: a GitHub PAT (repo read scope) for cloning PRIVATE repos.
+    # Falls back to the GITHUB_TOKEN env var if not provided. Never logged,
+    # never persisted, never included in any cached/returned result -- see
+    # src/core/security.py (build_authenticated_clone_url / redact_token).
+    github_token: str | None = None
 
     @field_validator("repo_url")
     @classmethod
@@ -70,6 +75,7 @@ class DiffRequest(BaseModel):
 class ParallelAnalyzeRequest(BaseModel):
     repo_url: str
     max_concurrent: int = 3
+    github_token: str | None = None  # optional PAT for private repos, see RepoRequest
 
     @field_validator("repo_url")
     @classmethod
@@ -130,7 +136,7 @@ async def analyze_stream(req: RepoRequest):
 
         def _run():
             try:
-                result_holder["result"] = analyze_repository(req.repo_url)
+                result_holder["result"] = analyze_repository(req.repo_url, github_token=req.github_token)
             except Exception as e:
                 error_holder["error"] = str(e)
 
@@ -180,7 +186,7 @@ async def analyze_stream(req: RepoRequest):
 def analyze(req: RepoRequest):
     logger.info(f"Analyze request: {req.repo_url}")
     try:
-        result = analyze_repository(req.repo_url)
+        result = analyze_repository(req.repo_url, github_token=req.github_token)
         if result.get("repo_path") is None and "Error" in result.get("analysis", ""):
             raise HTTPException(status_code=422, detail=result["analysis"])
         return result
@@ -341,7 +347,9 @@ async def analyze_parallel(req: ParallelAnalyzeRequest):
     try:
         # Step 1: clone + detect (blocking, run in executor)
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, analyze_repository, req.repo_url)
+        result = await loop.run_in_executor(
+            None, lambda: analyze_repository(req.repo_url, github_token=req.github_token)
+        )
 
         issues = result.get("issues", [])
         repo_path = result.get("repo_path")
