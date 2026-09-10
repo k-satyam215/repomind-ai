@@ -10,10 +10,18 @@ from src.core.logger import get_logger
 
 logger = get_logger("RepoMind.API")
 
+# Single source of truth for the version string used across every endpoint
+# below (root, health, health/detailed) and in the FastAPI app metadata --
+# previously each of these hardcoded its own value (1.2.0) independently of
+# pyproject.toml's version (1.0.0) and the frontend's displayed version
+# (1.5.0), so the three drifted out of sync. Keep this in step with
+# [project].version in pyproject.toml when bumping releases.
+APP_VERSION = "1.6.0"
+
 app = FastAPI(
     title="RepoMind AI",
     description="Autonomous Software Engineering Agent API",
-    version="1.2.0",
+    version=APP_VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -32,12 +40,12 @@ app.include_router(router)
 
 @app.get("/")
 def root():
-    return {"message": "RepoMind AI is running", "version": "1.2.0"}
+    return {"message": "RepoMind AI is running", "version": APP_VERSION}
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "1.2.0"}
+    return {"status": "ok", "version": APP_VERSION}
 
 
 @app.get("/health/detailed")
@@ -93,6 +101,6 @@ def health_detailed():
 
     status_code = 200 if overall == "ok" else 207
     return JSONResponse(
-        content={"status": overall, "version": "1.2.0", "checks": checks},
+        content={"status": overall, "version": APP_VERSION, "checks": checks},
         status_code=status_code,
     )

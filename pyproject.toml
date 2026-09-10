@@ -1,6 +1,6 @@
 [project]
 name = "repomind-ai"
-version = "1.0.0"
+version = "1.6.0"
 description = "Autonomous AI agent that analyzes GitHub repositories, detects runtime bugs, generates fixes, validates them in a sandbox, and creates pull requests."
 readme = "README.md"
 requires-python = ">=3.11"
