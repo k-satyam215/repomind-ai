@@ -10,11 +10,11 @@ st.set_page_config(page_title="RepoMind AI", page_icon="🤖", layout="wide")
 
 st.markdown("""
 <style>
-.stApp { background: #080b12; color: #e6edf7; }
+.stApp { background: #050609; color: #e6edf7; }
 .stApp::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
-    background: radial-gradient(ellipse 58% 42% at 54% -8%, rgba(14,165,233,.16), transparent 70%),
-                radial-gradient(ellipse 35% 28% at 100% 46%, rgba(16,185,129,.07), transparent 72%); }
-header[data-testid="stHeader"] { background: rgba(8,11,18,.78); backdrop-filter: blur(18px);
+    background: radial-gradient(ellipse 46% 58% at -8% 28%, rgba(102,25,168,.20), transparent 72%),
+                radial-gradient(ellipse 48% 58% at 105% 70%, rgba(10,91,191,.17), transparent 72%); }
+header[data-testid="stHeader"] { background: rgba(5,6,9,.78); backdrop-filter: blur(18px);
     border-bottom: 1px solid rgba(148,163,184,.09); }
 .block-container { max-width: 1180px; padding: 2.2rem 2rem 4.5rem; }
 h1 { margin: 0 !important; font-size: clamp(2.5rem, 5vw, 4.6rem) !important; line-height: 1.02 !important;
@@ -49,13 +49,24 @@ label, [data-testid="stWidgetLabel"] p { color: #dbe7f5 !important;
     padding:16px; font-family:monospace; font-size:.82rem; line-height:1.6;
     max-height:400px; overflow-y:auto; color:#a5f3fc; }
 hr { border: 0; border-top: 1px solid #202c3e; }
-.hero { position:relative; overflow:hidden; padding: 52px 38px 38px; border: 1px solid #263952;
-  border-radius: 22px; background: linear-gradient(120deg, rgba(15,23,42,.84), rgba(12,24,39,.72));
-  box-shadow: 0 28px 80px rgba(0,0,0,.25); margin: 0 0 28px; }
-.hero::after { content:""; position:absolute; width:420px; height:420px; right:-160px; top:-275px; border-radius:50%;
-  background: radial-gradient(circle, rgba(14,165,233,.32), rgba(14,165,233,0) 68%); }
-.hero-kicker { color:#7dd3fc; font-size:.73rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
-.hero-copy { color:#b9c8da; max-width:670px; font-size:1.08rem; line-height:1.6; margin:18px 0 0; }
+.hero { position:relative; overflow:hidden; text-align:center; padding: 34px 38px 30px;
+  border: 1px solid rgba(91,105,148,.24); border-radius: 24px;
+  background: linear-gradient(135deg, rgba(19,10,40,.54), rgba(5,8,15,.4) 42%, rgba(7,23,49,.58));
+  box-shadow: 0 28px 80px rgba(0,0,0,.32); margin: 0 0 28px; }
+.hero::before { content:""; position:absolute; width:460px; height:300px; left:-190px; top:-110px;
+  background:radial-gradient(circle, rgba(139,92,246,.22), transparent 67%); pointer-events:none; }
+.hero::after { content:""; position:absolute; width:460px; height:300px; right:-190px; bottom:-150px;
+  background:radial-gradient(circle, rgba(34,211,238,.18), transparent 67%); pointer-events:none; }
+.brain-mark { position:relative; z-index:1; width:88px; height:88px; margin:0 auto 18px; padding:10px;
+  border:1px solid rgba(103,232,249,.75); border-radius:50%; background:rgba(6,11,22,.86);
+  box-shadow:0 0 0 5px rgba(139,92,246,.12), 0 0 42px rgba(34,211,238,.18); }
+.brain-mark svg { width:100%; height:100%; filter:drop-shadow(0 0 8px rgba(129,140,248,.6)); }
+.hero-kicker { position:relative; z-index:1; color:#a5b4fc; font-size:.72rem; font-weight:800;
+  letter-spacing:.22em; text-transform:uppercase; }
+.hero-kicker b { color:#60a5fa; font-weight:800; }
+.hero-copy { position:relative; z-index:1; color:#cbd5e1; max-width:720px; font-size:1.08rem;
+  line-height:1.6; margin:18px auto 0; }
+.hero h1 { position:relative; z-index:1; }
 .trust-chip { display:inline-block; color:#b6f5d8; border:1px solid rgba(52,211,153,.38); border-radius:999px;
   background:rgba(16,185,129,.08); padding:5px 11px; font-size:.76rem; margin:20px 6px 0 0; }
 [data-testid="stTabs"] { margin-bottom: 14px; }
@@ -64,7 +75,8 @@ hr { border: 0; border-top: 1px solid #202c3e; }
 [data-testid="stExpander"] { border-color:#273449 !important; border-radius:12px !important;
   background:#0c111b !important; }
 .section-note { color:#8fa3bc; font-size:.94rem; margin:0 0 1.2rem; }
-@media (max-width: 700px) { .block-container { padding:1rem 1rem 3rem; } .hero { padding:34px 24px 28px; } }
+@media (max-width: 700px) { .block-container { padding:1rem 1rem 3rem; }
+  .hero { padding:30px 20px 26px; } .brain-mark { width:76px; height:76px; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -77,10 +89,29 @@ def sev_badge(sev: str) -> str:
 # ─── Header ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-  <div class="hero-kicker">RepoMind AI · Autonomous engineering with human control</div>
-  <h1>Review every change.<br><em>Ship with confidence.</em></h1>
-  <p class="hero-copy">Analyze repositories, surface real issues, and review sandbox-tested
-  fixes before a single file changes.</p>
+  <div class="brain-mark" aria-hidden="true">
+    <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="brain-gradient" x1="12" y1="18" x2="85" y2="80">
+          <stop stop-color="#A78BFA"/><stop offset="1" stop-color="#22D3EE"/>
+        </linearGradient>
+      </defs>
+      <path d="M47 18C38 12 26 16 24 27C15 28 11 39 17 47C11 56 16 68 27 69C30 79 40 83 48 77"
+        stroke="url(#brain-gradient)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M49 18C58 12 70 16 72 27C81 28 85 39 79 47C85 56 80 68 69 69C66 79 56 83 48 77"
+        stroke="url(#brain-gradient)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M48 21V74M25 36C33 35 35 42 42 41M72 36C64 35 62 42 55 41"
+        stroke="url(#brain-gradient)" stroke-width="3" stroke-linecap="round"/>
+      <path d="M24 57C33 56 35 64 43 61M72 57C63 56 61 64 53 61"
+        stroke="url(#brain-gradient)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="34" cy="31" r="3" fill="#C4B5FD"/><circle cx="62" cy="31" r="3" fill="#67E8F9"/>
+      <circle cx="37" cy="54" r="3" fill="#C4B5FD"/><circle cx="59" cy="54" r="3" fill="#67E8F9"/>
+    </svg>
+  </div>
+  <div class="hero-kicker">R E P O M I N D &nbsp; <b>● v1.6</b></div>
+  <h1>GitHub repository analysis,<br><em>code review &amp; safe fixes.</em></h1>
+  <p class="hero-copy">Understand repositories faster with context-aware AI. From a URL to
+  architecture, security findings, and review-ready, sandbox-tested patches.</p>
   <span class="trust-chip">● Sandbox-tested</span>
   <span class="trust-chip">● Secret-safe execution</span>
   <span class="trust-chip">● Approval required</span>
