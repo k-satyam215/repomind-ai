@@ -45,13 +45,19 @@ def analyze_repository(repo_url: str, force_refresh: bool = False, github_token:
             "cache_hit": bool   # True if served from Redis cache
         }
     """
+    # Resolve authentication before looking in the shared cache.  Analysis
+    # output can expose sensitive architecture and issue details, so a run
+    # authorised with a PAT must never read from or write to a URL-only cache.
+    # Public runs still use the cache normally.
+    github_token = github_token or os.getenv("GITHUB_TOKEN")
+    use_shared_cache = not bool(github_token)
+
     # ── Cache lookup ────────────────────────────────────────────────
-    if not force_refresh:
+    if use_shared_cache and not force_refresh:
         cached = cache_get(repo_url)
         if cached:
             return cached
 
-    github_token = github_token or os.getenv("GITHUB_TOKEN")
     clone_url = build_authenticated_clone_url(repo_url, github_token)
 
     os.makedirs(REPO_WORKSPACE_ROOT, mode=0o700, exist_ok=True)
@@ -120,8 +126,11 @@ def analyze_repository(repo_url: str, force_refresh: bool = False, github_token:
             "cache_hit": False
         }
 
-        # ── Cache result for next time ────────────────────────────────
-        cache_set(repo_url, result)
+        # Private-token runs deliberately bypass shared Redis caching.  The
+        # result itself contains no token, but can still reveal private code
+        # structure and security findings to a later caller of the same URL.
+        if use_shared_cache:
+            cache_set(repo_url, result)
 
         return result
 

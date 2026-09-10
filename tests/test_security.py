@@ -180,3 +180,25 @@ def test_analyze_repository_never_includes_token_in_result(monkeypatch, tmp_path
 
     assert result["repo_url"] == "https://github.com/owner/private-repo"
     assert token not in str(result)
+
+
+def test_private_token_run_bypasses_shared_cache(monkeypatch):
+    """Private analysis results must not be retrievable by URL alone."""
+    monkeypatch.setattr(main_module, "REPO_WORKSPACE_ROOT", "unused-workspace")
+    monkeypatch.setattr(main_module.os, "makedirs", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_module.tempfile, "mkdtemp", lambda **_kwargs: "fake-sandbox")
+    cache_get_calls = []
+    cache_set_calls = []
+    monkeypatch.setattr(main_module, "cache_get", lambda url: cache_get_calls.append(url))
+    monkeypatch.setattr(main_module, "cache_set", lambda url, data: cache_set_calls.append(url))
+    def fake_clone_from(*_args, **_kwargs):
+        raise git.exc.GitCommandError("git clone", 128, stderr="Authentication failed")
+
+    monkeypatch.setattr(git.Repo, "clone_from", fake_clone_from)
+
+    main_module.analyze_repository(
+        "https://github.com/owner/private-repo", github_token="ghp_private"
+    )
+
+    assert cache_get_calls == []
+    assert cache_set_calls == []

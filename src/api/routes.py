@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -107,13 +108,15 @@ async def analyze_stream(req: RepoRequest):
         return f"data: {json.dumps(payload)}\n\n"
 
     async def _generator():
-        # Check cache first
-        cached = cache_get(req.repo_url)
-        if cached:
-            yield _event("cache", "⚡ Served from Redis cache — instant result!")
-            await asyncio.sleep(0.05)
-            yield _event("complete", "✅ Analysis complete!", {"result": cached})
-            return
+        # PAT-authorised runs must bypass the URL-only shared cache; see
+        # analyze_repository() for the matching write-side guard.
+        if not (req.github_token or os.getenv("GITHUB_TOKEN")):
+            cached = cache_get(req.repo_url)
+            if cached:
+                yield _event("cache", "⚡ Served from Redis cache — instant result!")
+                await asyncio.sleep(0.05)
+                yield _event("complete", "✅ Analysis complete!", {"result": cached})
+                return
 
         yield _event("start", f"🔗 Starting analysis for {req.repo_url}")
         await asyncio.sleep(0.05)

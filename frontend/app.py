@@ -10,7 +10,9 @@ st.set_page_config(page_title="RepoMind AI", page_icon="🤖", layout="wide")
 
 st.markdown("""
 <style>
-.stApp { background: radial-gradient(circle at top, #0f172a, #020617); color: #e2e8f0; }
+.stApp { background: radial-gradient(circle at 14% 0%, #1e1b4b 0%, #0f172a 38%, #020617 80%); color: #e2e8f0; }
+header[data-testid="stHeader"] { background: rgba(2, 6, 23, .72); backdrop-filter: blur(16px); }
+.block-container { max-width: 1220px; padding-top: 2.7rem; padding-bottom: 4rem; }
 h1 { font-size: 2.8rem !important; font-weight: 700;
      background: linear-gradient(90deg, #818cf8, #c084fc);
      -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -34,6 +36,15 @@ input { border-radius: 12px !important; border: 1px solid #334155 !important;
     padding:16px; font-family:monospace; font-size:.82rem; line-height:1.6;
     max-height:400px; overflow-y:auto; color:#a5f3fc; }
 hr { border:1px solid #1e293b; }
+.hero { padding: 26px 28px; border: 1px solid rgba(129,140,248,.35); border-radius: 20px;
+  background: linear-gradient(120deg, rgba(79,70,229,.20), rgba(15,23,42,.76) 58%, rgba(168,85,247,.12));
+  box-shadow: 0 18px 70px rgba(2,6,23,.32); margin: 0 0 22px; }
+.hero-kicker { color:#a5b4fc; font-size:.76rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.hero-copy { color:#cbd5e1; max-width:740px; line-height:1.55; margin:0; }
+.trust-chip { display:inline-block; color:#bbf7d0; border:1px solid rgba(74,222,128,.35); border-radius:999px;
+  background:rgba(34,197,94,.08); padding:4px 10px; font-size:.78rem; margin:12px 6px 0 0; }
+[data-testid="stTabs"] button { font-weight: 650; border-radius: 10px 10px 0 0; }
+[data-testid="stTabs"] button[aria-selected="true"] { color: #c4b5fd; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -44,9 +55,14 @@ def sev_badge(sev: str) -> str:
 
 
 # ─── Header ─────────────────────────────────────────────────────────────────
-st.markdown("# 🤖 RepoMind AI")
-st.caption("⚡ Autonomous Code Debugging Agent · v1.6.0")
-st.divider()
+st.markdown("""
+<div class="hero">
+  <div class="hero-kicker">Autonomous engineering, with human control</div>
+  <h1>🤖 RepoMind AI</h1>
+  <p class="hero-copy">Turn a GitHub repository into a clear, reviewable repair plan. RepoMind detects issues, generates minimal diffs, tests in a sandbox, and waits for your approval before applying a change.</p>
+  <span class="trust-chip">✓ Sandbox-first</span><span class="trust-chip">✓ Secret-safe execution</span><span class="trust-chip">✓ Approval required</span>
+</div>
+""", unsafe_allow_html=True)
 
 tab_analyze, tab_stream, tab_parallel, tab_metrics = st.tabs([
     "🔍 Analyze", "⚡ Streaming Fix", "🚀 Parallel Mode", "📊 Observability"
@@ -68,8 +84,14 @@ for key, default in [
 # TAB 1 — Standard Analyze
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_analyze:
+    st.caption("Start with a public repository, or securely provide a fine-grained read-only token for a private one.")
     repo = st.text_input("🔗 GitHub Repository URL", key="repo_url_standard",
                          placeholder="https://github.com/owner/repo")
+    github_token = st.text_input(
+        "GitHub personal access token (optional)", type="password", key="github_token_standard",
+        placeholder="github_pat_...",
+        help="Only used for this analysis to clone a private repository. It is never displayed, logged, returned, or placed in the shared cache."
+    )
     col1, col2 = st.columns([1, 5])
     with col1:
         go = st.button("🚀 Analyze", use_container_width=True, key="analyze_btn")
@@ -78,6 +100,7 @@ with tab_analyze:
             st.session_state.analysis_data = None
             st.session_state.fix_results = {}
             st.session_state.pending_approvals = {}
+            st.session_state.github_token_standard = ""
             st.rerun()
 
     if go:
@@ -104,7 +127,7 @@ with tab_analyze:
             try:
                 with requests.post(
                     f"{BACKEND}/analyze/stream",
-                    json={"repo_url": repo},
+                    json={"repo_url": repo, "github_token": github_token or None},
                     stream=True,
                     timeout=600
                 ) as r:
@@ -426,6 +449,11 @@ with tab_parallel:
 
     p_repo = st.text_input("🔗 GitHub URL", key="parallel_repo",
                            placeholder="https://github.com/owner/repo")
+    p_github_token = st.text_input(
+        "GitHub personal access token (optional)", type="password", key="github_token_parallel",
+        placeholder="github_pat_...",
+        help="Use a fine-grained, read-only token for private repositories. Token-authorised runs bypass the shared cache."
+    )
     p_concurrency = st.slider("Max concurrent LLM calls", 1, 5, 3,
                               help="Higher = faster but more likely to hit rate limits")
 
@@ -437,7 +465,8 @@ with tab_parallel:
                 try:
                     res = requests.post(
                         f"{BACKEND}/analyze/parallel",
-                        json={"repo_url": p_repo, "max_concurrent": p_concurrency},
+                        json={"repo_url": p_repo, "max_concurrent": p_concurrency,
+                              "github_token": p_github_token or None},
                         timeout=600
                     )
                     if res.status_code == 200:
