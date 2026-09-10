@@ -7,6 +7,7 @@ from langchain_groq import ChatGroq
 
 from src.core.config import GROQ_API_KEY, GROQ_MODEL_STRONG
 from src.core.logger import get_logger
+from src.core.prompt_guard import SECURITY_INSTRUCTION, fence_untrusted_code, scan_code_for_injection
 
 logger = get_logger("RepoMind.BugDetector")
 
@@ -65,7 +66,7 @@ confidence guide:
 - 1.0: 100% certain this is a real bug
 - 0.8: very likely a bug
 - 0.6: probable bug, context-dependent
-- below 0.5: uncertain — do not report"""
+- below 0.5: uncertain — do not report""" + SECURITY_INSTRUCTION
 
 
 def detect_bugs(file: str, code: str) -> Optional[dict]:
@@ -86,10 +87,14 @@ def detect_bugs(file: str, code: str) -> Optional[dict]:
 
     logger.debug(f"Detecting bugs in: {file}")
 
+    is_suspicious, matched = scan_code_for_injection(code)
+    if is_suspicious:
+        logger.warning(f"Possible prompt-injection pattern in '{file}': {matched}")
+
     try:
         messages = [
             SystemMessage(content=SYSTEM_PROMPT),
-            HumanMessage(content=f"FILE: {file}\n\nCODE:\n{code[:7000]}")
+            HumanMessage(content=f"FILE: {file}\n\nCODE:\n{fence_untrusted_code(code[:7000], file)}")
         ]
 
         res = llm.invoke(messages)

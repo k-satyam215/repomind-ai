@@ -12,6 +12,7 @@ from langchain_groq import ChatGroq
 
 from src.core.config import GROQ_API_KEY, GROQ_MODEL_STRONG, MAX_FIX_LINES, RUN_RUNTIME_VALIDATION
 from src.core.logger import get_logger
+from src.core.prompt_guard import SECURITY_INSTRUCTION, fence_untrusted_code, scan_code_for_injection
 
 logger = get_logger("RepoMind.FixGenerator")
 
@@ -95,7 +96,7 @@ RULES:
 - Keep ALL original code intact. Only modify the buggy section.
 - Do NOT add comments, explanations, or docstrings.
 - Do NOT wrap output in markdown code blocks.
-- Output ONLY raw Python code starting from line 1."""
+- Output ONLY raw Python code starting from line 1.""" + SECURITY_INSTRUCTION
 
 MULTI_FILE_SYSTEM_PROMPT = """You are a senior Python engineer fixing a bug across multiple files.
 
@@ -106,7 +107,7 @@ For EACH file that needs changes, output in EXACT format:
 
 Include ONLY files that actually need changes.
 Return COMPLETE content — not just changed lines.
-No markdown, no backticks."""
+No markdown, no backticks.""" + SECURITY_INSTRUCTION
 
 SELF_HEAL_SYSTEM_PROMPT = f"""You are a senior Python engineer.
 
@@ -267,17 +268,20 @@ def _build_messages(
     supporting_context: str = "",
 ) -> list:
     min_ver = _detect_min_python(code)
+    is_suspicious, matched = scan_code_for_injection(code)
+    if is_suspicious:
+        logger.warning(f"Possible prompt-injection pattern in '{file}': {matched}")
     prompt = (
         f"FILE: {file}\n"
         f"REPO MIN PYTHON: {min_ver} | RUNTIME PYTHON: {_PY_VERSION_STR}\n\n"
         f"BUG REPORT:\n{bug}\n\n"
-        f"FULL FILE CODE:\n{code[:8000]}"
+        f"FULL FILE CODE:\n{fence_untrusted_code(code[:8000], file)}"
     )
     if supporting_context:
         prompt += (
             "\n\nRELATED REPOSITORY CONTEXT (reference only; return ONLY the "
             "complete fixed primary file):\n"
-            f"{supporting_context[:8000]}"
+            f"{fence_untrusted_code(supporting_context[:8000], 'related_context')}"
         )
     return [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=prompt)]
 
@@ -404,7 +408,7 @@ def generate_multi_file_fix(
     )
 
     context_parts = [
-        f"=== FILE: {fname} ===\n{fcode[:4000]}\n=== END FILE ==="
+        f"=== FILE: {fname} ===\n{fence_untrusted_code(fcode[:4000], fname)}\n=== END FILE ==="
         for fname, fcode in files_context.items()
     ]
 
