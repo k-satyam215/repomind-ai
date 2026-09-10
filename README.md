@@ -12,9 +12,9 @@ pinned: false
 
 # RepoMind AI
 
-### Autonomous Software Engineering Agent
+### Review-first AI Repository Analysis
 
-**Give it a GitHub URL. It clones, detects bugs, generates fixes, validates, and opens a PR — without human intervention.**
+**Give it a GitHub URL. RepoMind maps the codebase, surfaces likely issues, and produces review-ready fix previews. Nothing is pushed to GitHub automatically.**
 
 [![CI](https://github.com/k-satyam215/repomind-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/k-satyam215/repomind-ai/actions/workflows/ci.yml)
 [![CD](https://github.com/k-satyam215/repomind-ai/actions/workflows/cd.yml/badge.svg)](https://github.com/k-satyam215/repomind-ai/actions/workflows/cd.yml)
@@ -32,10 +32,9 @@ pinned: false
 
 <br/>
 
-> RepoMind is not a code assistant. It is an autonomous agent that operates a full software engineering loop:
-> repo understanding → bug detection with confidence scoring → dependency-aware fix generation →
-> AST validation → sandboxed pytest execution → reflection-driven retry → GitHub PR creation.
-> No human in the loop until the PR is opened.
+> RepoMind is a review-first repository agent: repo understanding → issue detection with confidence
+> scoring → dependency-aware fix generation → diff preview → explicit user approval. The hosted
+> experience is read-only with respect to GitHub: it never pushes commits or creates pull requests.
 
 </div>
 
@@ -43,7 +42,8 @@ pinned: false
 
 ## What it does
 
-RepoMind runs a stateful, multi-step agent graph (LangGraph) against any public GitHub Python repository:
+RepoMind runs a stateful, multi-step agent graph (LangGraph) against public GitHub Python repositories,
+or private repositories when a scoped read-only token is supplied:
 
 1. **Clones and parses** the repository, building a dependency map from import analysis
 2. **Prioritizes files** by structural importance (entry points, config, core modules)
@@ -54,8 +54,32 @@ RepoMind runs a stateful, multi-step agent graph (LangGraph) against any public 
 7. **Runs pytest** on the sandboxed repo via the MCP tool layer
 8. **Reflects** on test failures and retries with a revised strategy (up to 3 cycles) — or stops if the planner determines the bug is unfixable
 9. **Processes all detected issues** — not just the first one; each issue has its own retry loop
-10. **Opens a GitHub Pull Request** only after validation succeeds
+10. **Shows a reviewable diff** and waits for explicit user approval before applying a preview to the
+    temporary analysis workspace
 11. **Records metrics** — fix success rate, retry distribution, stage latency, severity breakdown — served at `/metrics`
+
+## Private repositories and safe review
+
+RepoMind supports private repositories through a fine-grained GitHub personal access token (PAT).
+Use the smallest possible permission set:
+
+1. In GitHub, create a **fine-grained** token with access to **only the repository** you intend to analyze.
+2. Grant **Repository contents: Read-only**. GitHub adds **Metadata: Read-only** automatically.
+3. In RepoMind, enter the HTTPS repository URL and paste the token into the masked **GitHub personal
+   access token (optional)** field.
+4. Review every finding and diff. Run the target repository's test suite before using any suggested fix.
+5. Revoke short-lived test tokens when the test is complete.
+
+Token-authorised analyses bypass the shared cache. The token is used only to authenticate cloning and is
+redacted from errors and logs. Do not grant write permissions for the current hosted workflow.
+
+### What “Approve & Apply” means
+
+In the current UI, approval writes the reviewed preview only to RepoMind's temporary cloned workspace.
+It does **not** commit, push, or open a pull request on GitHub. Copy the reviewed change into your branch,
+run your own tests, then commit and push through your normal Git workflow. A future PR integration should
+use an explicit approval screen, a new branch, least-privilege write access, and passing tests—not direct
+pushes to `main`.
 
 ---
 
@@ -166,7 +190,7 @@ bash setup.sh
 ```env
 # .env
 GROQ_API_KEY=your_groq_api_key_here
-GITHUB_TOKEN=your_github_token_here    # optional — only for PR creation
+GITHUB_TOKEN=your_github_token_here    # optional — private-repo clone token; use read-only scope
 ```
 
 ```bash
@@ -209,7 +233,7 @@ docker pull satyam215/repomind-ai:latest
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `GROQ_API_KEY` | Yes | — | Get free at [console.groq.com](https://console.groq.com) |
-| `GITHUB_TOKEN` | No | — | GitHub PAT — needed only for PR creation |
+| `GITHUB_TOKEN` | No | — | GitHub fine-grained PAT for private-repository cloning; use repository contents read-only |
 | `GROQ_MODEL_STRONG` | No | `openai/gpt-oss-120b` | Model for bug detection, fix generation, repo analysis |
 | `GROQ_MODEL_FAST` | No | `openai/gpt-oss-20b` | Model for reflection + retry/stop planning |
 | `LANGSMITH_API_KEY` | No | — | [LangSmith](https://smith.langchain.com) API key — enables full LLM call tracing |
@@ -298,10 +322,12 @@ repomind-ai/
 - [x] Codex-style runtime verification + self-heal loop (fix → run → fix error → repeat)
 - [x] Docker Hub publish on version tag (CD pipeline)
 - [x] HuggingFace Spaces live demo deploy
+- [x] Private repository analysis with a masked, read-only fine-grained PAT field
+- [x] Token-authorised runs bypass the shared repository-analysis cache
 - [ ] JavaScript / TypeScript support
 - [ ] Cloud sandbox execution (E2B / Modal) — no local Docker dependency
 - [ ] Slack / Discord notification on fix completion
-- [ ] Native CI/CD trigger — run RepoMind on every PR automatically
+- [ ] Approval-gated GitHub Pull Request creation on a dedicated branch
 
 ---
 
