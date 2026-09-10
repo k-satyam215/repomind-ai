@@ -10,41 +10,61 @@ st.set_page_config(page_title="RepoMind AI", page_icon="🤖", layout="wide")
 
 st.markdown("""
 <style>
-.stApp { background: radial-gradient(circle at 14% 0%, #1e1b4b 0%, #0f172a 38%, #020617 80%); color: #e2e8f0; }
-header[data-testid="stHeader"] { background: rgba(2, 6, 23, .72); backdrop-filter: blur(16px); }
-.block-container { max-width: 1220px; padding-top: 2.7rem; padding-bottom: 4rem; }
-h1 { font-size: 2.8rem !important; font-weight: 700;
-     background: linear-gradient(90deg, #818cf8, #c084fc);
-     -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-input { border-radius: 12px !important; border: 1px solid #334155 !important;
-        background-color: #020617 !important; color: white !important; }
-.stButton>button { border-radius: 12px; height: 45px; font-weight: 600;
-    background: linear-gradient(135deg, #6366f1, #a855f7); color: white;
-    border: none; transition: 0.3s; }
-.stButton>button:hover { transform: scale(1.04); background: linear-gradient(135deg, #4f46e5, #9333ea); }
-[data-testid="stMetric"] { background: rgba(15,23,42,0.6); border: 1px solid #334155;
-    padding: 20px; border-radius: 14px; backdrop-filter: blur(10px); }
+.stApp { background: #080b12; color: #e6edf7; }
+.stApp::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background: radial-gradient(ellipse 58% 42% at 54% -8%, rgba(14,165,233,.16), transparent 70%),
+                radial-gradient(ellipse 35% 28% at 100% 46%, rgba(16,185,129,.07), transparent 72%); }
+header[data-testid="stHeader"] { background: rgba(8,11,18,.78); backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(148,163,184,.09); }
+.block-container { max-width: 1180px; padding: 2.2rem 2rem 4.5rem; }
+h1 { margin: 0 !important; font-size: clamp(2.5rem, 5vw, 4.6rem) !important; line-height: 1.02 !important;
+     font-weight: 760 !important; letter-spacing: -.06em; color: #f8fafc !important; }
+h1 em { color:#38bdf8; font-style:normal; }
+input, textarea { border-radius: 12px !important; border: 1px solid #263244 !important;
+        background-color: #0c111b !important; color: #f8fafc !important; }
+input:focus, textarea:focus { border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56,189,248,.13) !important; }
+label, [data-testid="stWidgetLabel"] p { color: #dbe7f5 !important;
+    font-weight: 600 !important; }
+.stButton>button { border-radius: 10px; min-height: 44px; font-weight: 700; letter-spacing: .01em;
+    background: #1687e8; color: #f8fbff; border: 1px solid #249bf7; transition: .18s ease;
+    box-shadow: 0 7px 18px rgba(14,165,233,.16); }
+.stButton>button:hover { transform: translateY(-1px); background: #2599f4; border-color: #5cc7ff; }
+.st-key-reset_btn button, .st-key-parallel_reset_btn button {
+    background: transparent !important; color: #9fb1c8 !important;
+    border-color: #2a3649 !important; box-shadow: none !important; }
+.st-key-reset_btn button:hover, .st-key-parallel_reset_btn button:hover {
+    color:#e6edf7 !important; background:#131b28 !important; }
+[data-testid="stMetric"] { background: linear-gradient(145deg, rgba(19,27,40,.85), rgba(12,17,27,.9));
+    border: 1px solid #273449; padding: 18px; border-radius: 12px; }
 .sev-critical { background: rgba(239,68,68,.15); border:1px solid #ef4444; border-radius:8px;
     padding:3px 10px; color:#ef4444; font-weight:700; font-size:.75rem; display:inline-block; }
 .sev-high { background: rgba(249,115,22,.15); border:1px solid #f97316; border-radius:8px;
     padding:3px 10px; color:#f97316; font-weight:700; font-size:.75rem; display:inline-block; }
 .sev-medium { background: rgba(234,179,8,.15); border:1px solid #eab308; border-radius:8px;
     padding:3px 10px; color:#eab308; font-weight:700; font-size:.75rem; display:inline-block; }
-.approve-box { border:1px solid #22c55e; border-radius:12px; padding:16px;
-    background:rgba(34,197,94,.07); margin:8px 0; }
-.stream-box { background:#0f172a; border:1px solid #334155; border-radius:12px;
+.approve-box { border:1px solid rgba(52,211,153,.55); border-radius:12px; padding:16px;
+    background:rgba(16,185,129,.08); margin:8px 0; }
+.stream-box { background:#0c111b; border:1px solid #273449; border-radius:12px;
     padding:16px; font-family:monospace; font-size:.82rem; line-height:1.6;
     max-height:400px; overflow-y:auto; color:#a5f3fc; }
-hr { border:1px solid #1e293b; }
-.hero { padding: 26px 28px; border: 1px solid rgba(129,140,248,.35); border-radius: 20px;
-  background: linear-gradient(120deg, rgba(79,70,229,.20), rgba(15,23,42,.76) 58%, rgba(168,85,247,.12));
-  box-shadow: 0 18px 70px rgba(2,6,23,.32); margin: 0 0 22px; }
-.hero-kicker { color:#a5b4fc; font-size:.76rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
-.hero-copy { color:#cbd5e1; max-width:740px; line-height:1.55; margin:0; }
-.trust-chip { display:inline-block; color:#bbf7d0; border:1px solid rgba(74,222,128,.35); border-radius:999px;
-  background:rgba(34,197,94,.08); padding:4px 10px; font-size:.78rem; margin:12px 6px 0 0; }
-[data-testid="stTabs"] button { font-weight: 650; border-radius: 10px 10px 0 0; }
-[data-testid="stTabs"] button[aria-selected="true"] { color: #c4b5fd; }
+hr { border: 0; border-top: 1px solid #202c3e; }
+.hero { position:relative; overflow:hidden; padding: 52px 38px 38px; border: 1px solid #263952;
+  border-radius: 22px; background: linear-gradient(120deg, rgba(15,23,42,.84), rgba(12,24,39,.72));
+  box-shadow: 0 28px 80px rgba(0,0,0,.25); margin: 0 0 28px; }
+.hero::after { content:""; position:absolute; width:420px; height:420px; right:-160px; top:-275px; border-radius:50%;
+  background: radial-gradient(circle, rgba(14,165,233,.32), rgba(14,165,233,0) 68%); }
+.hero-kicker { color:#7dd3fc; font-size:.73rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+.hero-copy { color:#b9c8da; max-width:670px; font-size:1.08rem; line-height:1.6; margin:18px 0 0; }
+.trust-chip { display:inline-block; color:#b6f5d8; border:1px solid rgba(52,211,153,.38); border-radius:999px;
+  background:rgba(16,185,129,.08); padding:5px 11px; font-size:.76rem; margin:20px 6px 0 0; }
+[data-testid="stTabs"] { margin-bottom: 14px; }
+[data-testid="stTabs"] button { color:#93a5bd; font-weight:700; border-radius: 8px 8px 0 0; padding: 0 2px; }
+[data-testid="stTabs"] button[aria-selected="true"] { color: #7dd3fc; border-bottom-color: #38bdf8; }
+[data-testid="stExpander"] { border-color:#273449 !important; border-radius:12px !important;
+  background:#0c111b !important; }
+.section-note { color:#8fa3bc; font-size:.94rem; margin:0 0 1.2rem; }
+@media (max-width: 700px) { .block-container { padding:1rem 1rem 3rem; } .hero { padding:34px 24px 28px; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -57,14 +77,13 @@ def sev_badge(sev: str) -> str:
 # ─── Header ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-  <div class="hero-kicker">Autonomous engineering, with human control</div>
-  <h1>🤖 RepoMind AI</h1>
-  <p class="hero-copy">Turn a GitHub repository into a clear, reviewable repair plan.
-  RepoMind detects issues, generates minimal diffs, tests in a sandbox, and waits
-  for your approval before applying a change.</p>
-  <span class="trust-chip">✓ Sandbox-first</span>
-  <span class="trust-chip">✓ Secret-safe execution</span>
-  <span class="trust-chip">✓ Approval required</span>
+  <div class="hero-kicker">RepoMind AI · Autonomous engineering with human control</div>
+  <h1>Review every change.<br><em>Ship with confidence.</em></h1>
+  <p class="hero-copy">Analyze repositories, surface real issues, and review sandbox-tested
+  fixes before a single file changes.</p>
+  <span class="trust-chip">● Sandbox-tested</span>
+  <span class="trust-chip">● Secret-safe execution</span>
+  <span class="trust-chip">● Approval required</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -88,7 +107,11 @@ for key, default in [
 # TAB 1 — Standard Analyze
 # ══════════════════════════════════════════════════════════════════════════════
 with tab_analyze:
-    st.caption("Start with a public repository, or securely provide a fine-grained read-only token for a private one.")
+    st.markdown(
+        '<p class="section-note">Start with a public repository, or use a fine-grained '
+        'read-only token for a private one.</p>',
+        unsafe_allow_html=True,
+    )
     repo = st.text_input("🔗 GitHub Repository URL", key="repo_url_standard",
                          placeholder="https://github.com/owner/repo")
     github_token = st.text_input(
@@ -99,7 +122,7 @@ with tab_analyze:
             "displayed, logged, returned, or placed in the shared cache."
         )
     )
-    col1, col2 = st.columns([1, 5])
+    col1, col2, _ = st.columns([1.2, 1.2, 4])
     with col1:
         go = st.button("🚀 Analyze", use_container_width=True, key="analyze_btn")
     with col2:
