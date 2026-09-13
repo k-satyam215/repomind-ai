@@ -164,7 +164,12 @@ with tab_analyze:
             st.session_state.analysis_data = None
             st.session_state.fix_results = {}
             st.session_state.pending_approvals = {}
-            st.session_state.github_token_standard = ""
+            # Can't assign directly to a widget-bound session_state key in
+            # current Streamlit versions (StreamlitWidgetAlreadyInstantiatedError)
+            # once the widget has rendered earlier in this same script run.
+            # Deleting the key is allowed, and Streamlit recreates the widget
+            # with its default (empty) value on the rerun below.
+            st.session_state.pop("github_token_standard", None)
             st.rerun()
 
     if go:
