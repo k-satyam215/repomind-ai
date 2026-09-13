@@ -1,4 +1,5 @@
 import base64
+import html
 import json
 import os
 from pathlib import Path
@@ -207,12 +208,16 @@ with tab_analyze:
 
                         pct, label = stage_progress.get(stage, (bar, message))
                         bar.progress(int(pct))
+                        # message can carry a backend error string on the
+                        # "error" stage, which may echo parts of a git error
+                        # or filename from the analyzed (untrusted) repo.
+                        # Escape before rendering with unsafe_allow_html.
                         progress_box.markdown(
                             f"""
 <div style='padding:12px 16px;border-radius:10px;
 border:1px solid #334155;background:rgba(15,23,42,.8);
 font-size:.9rem;color:#e2e8f0;'>
-{message}
+{html.escape(message)}
 </div>""",
                             unsafe_allow_html=True
                         )
@@ -282,11 +287,17 @@ font-size:.9rem;color:#e2e8f0;'>
                         f"<span style='color:#94a3b8;font-size:.85rem;'>{btype} · confidence {conf:.0%}</span>",
                         unsafe_allow_html=True
                     )
+                    # bug/impact/fix_hint are LLM-generated text describing
+                    # code from an arbitrary, untrusted GitHub repo -- that's
+                    # this tool's whole purpose. Escape before rendering with
+                    # unsafe_allow_html so injected HTML/script content in a
+                    # malicious repo's code can't execute in the browser
+                    # (this page also holds the GitHub PAT input field).
                     st.markdown(f"""
 <div style="padding:14px;border-radius:12px;background:rgba(15,23,42,.6);border:1px solid #334155;margin:8px 0">
-<p style="color:#ff4b4b"><b>🔴 Bug:</b> {report.get('bug')}</p>
-<p style="color:#facc15"><b>🟡 Impact:</b> {report.get('impact')}</p>
-<p style="color:#4ade80"><b>🟢 Fix hint:</b> {report.get('fix_hint')}</p>
+<p style="color:#ff4b4b"><b>🔴 Bug:</b> {html.escape(str(report.get('bug') or ''))}</p>
+<p style="color:#facc15"><b>🟡 Impact:</b> {html.escape(str(report.get('impact') or ''))}</p>
+<p style="color:#4ade80"><b>🟢 Fix hint:</b> {html.escape(str(report.get('fix_hint') or ''))}</p>
 </div>""", unsafe_allow_html=True)
 
                     col_fix, col_multi = st.columns(2)
@@ -452,8 +463,11 @@ with tab_stream:
 
                         if payload["type"] == "token":
                             tokens.append(payload["content"])
+                            # Streamed LLM output describing/rewriting code
+                            # from the analyzed repo -- same untrusted-content
+                            # reasoning as the bug/impact/fix_hint block above.
                             stream_box.markdown(
-                                f'<div class="stream-box">{"".join(tokens)}</div>',
+                                f'<div class="stream-box">{html.escape("".join(tokens))}</div>',
                                 unsafe_allow_html=True
                             )
                         elif payload["type"] == "done":
